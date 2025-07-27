@@ -1,0 +1,83 @@
+import { StyleSheet } from 'react-native';
+
+export default StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  profileHeader: {
+    alignItems: 'center',
+    paddingVertical: 30,
+    backgroundColor: '#fff',
+    marginBottom:15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  avatarPlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#f58634',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  userName: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: '#0b184d',
+    marginBottom: 5,
+  },
+  userRole: {
+    fontSize: 16,
+    color: '#666',
+  },
+  menuContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginHorizontal: 15,
+    paddingHorizontal: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f5f5f5',
+  },
+  menuIconContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  menuText: {
+    fontSize: 16,
+    color: '#333',
+    marginLeft: 15,
+  },
+  bottomNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    backgroundColor: '#fff',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  tab: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+  },
+});

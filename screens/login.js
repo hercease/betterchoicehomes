@@ -7,10 +7,8 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   Image,
   Animated,
-  Easing,
   Dimensions,
   ActivityIndicator,
 } from 'react-native';
@@ -18,7 +16,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useForm, Controller } from 'react-hook-form';
-import Toast from 'react-native-toast-message';
 
 const { width } = Dimensions.get('window');
 
@@ -47,25 +44,34 @@ export default function LoginScreen({ navigation }) {
     animateButton();
     setIsLoading(true);
 
-    // Simulated network delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Simulated API call
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    // Mock token
     await AsyncStorage.setItem('authToken', 'mocked_token');
 
-    const userStatus = { status: true }; // or false to test redirect
-    setIsLoading(false);
-    navigation.replace(userStatus.status ? 'Dashboard' : 'UpdateProfile');
+    // Check if user profile is already completed
+    try {
+      const savedProfile = await AsyncStorage.getItem('userProfile');
+      const savedDocuments = await AsyncStorage.getItem('userDocuments');
+      setIsLoading(false);
+
+      if (!savedProfile) {
+        navigation.replace('EditProfile');  // First step
+      } else if (!savedDocuments) {
+        navigation.replace('DocumentUpload'); // Second step
+      } else {
+        navigation.replace('Dashboard'); // Only if both are done
+      }
+    } catch (error) {
+      setIsLoading(false);
+      navigation.replace('EditProfile');
+    }
   };
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
-
-  /*Toast.show({
-  type: 'error',
-  text1: 'Login Failed',
-  text2: 'Invalid email or password',
-  position: 'bottom',     // or 'bottom'
-});*/
 
   return (
     <LinearGradient
@@ -134,7 +140,10 @@ export default function LoginScreen({ navigation }) {
                 />
               )}
             />
-            <TouchableOpacity style={styles.eyeIcon} onPress={togglePasswordVisibility}>
+            <TouchableOpacity
+              style={styles.eyeIcon}
+              onPress={togglePasswordVisibility}
+            >
               <Ionicons
                 name={showPassword ? 'eye-off' : 'eye'}
                 size={24}

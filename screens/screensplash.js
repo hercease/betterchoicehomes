@@ -1,60 +1,60 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SplashScreen from 'expo-splash-screen';
 
 export default function SplashScreenPage({ navigation }) {
-    
   useEffect(() => {
     let isMounted = true;
 
     const prepareApp = async () => {
       try {
+        // Keep splash screen visible
         await SplashScreen.preventAutoHideAsync();
-        await new Promise(resolve => setTimeout(resolve, 10000)); // Simulated delay
+        
+        // Minimum display time (2 seconds)
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
+        // Check authentication and profile status
         const token = await AsyncStorage.getItem('authToken');
+        const userProfile = await AsyncStorage.getItem('userProfile');
+        const userDocuments = await AsyncStorage.getItem('userDocuments');
 
         if (!token) {
           if (isMounted) navigation.replace('Login');
           return;
         }
 
-        // 🔸 Simulated API response
-        const res = {
-          status: false, // change to true to test dashboard redirect
-          user: {
-            id: 1,
-            name: 'John Doe',
-          },
-        };
-
-        if (isMounted) {
-          if (res.status === true) {
-            navigation.replace('Dashboard');
-          } else {
-            navigation.replace('UpdateProfile');
-          }
+        if (userProfile && userDocuments) {
+          await AsyncStorage.setItem('profileComplete', 'true');
+          if (isMounted) navigation.replace('Dashboard');
+        } else if (userProfile && !userDocuments) {
+          if (isMounted) navigation.replace('DocumentUpload');
+        } else {
+          if (isMounted) navigation.replace('EditProfile');
         }
+  
       } catch (e) {
-        console.error('Error during splash logic:', e);
+        console.error('Splash screen error:', e);
         if (isMounted) navigation.replace('Login');
       } finally {
         if (isMounted) await SplashScreen.hideAsync();
       }
     };
-
+  
     prepareApp();
-
+  
     return () => {
       isMounted = false;
     };
   }, []);
 
-  // Your programmatic splash screen UI
   return (
     <View style={styles.container}>
-      <Image source={require('../assets/better-icon-removebg-preview.png')} style={styles.logo} />
+      <Image 
+        source={require('../assets/better-icon-removebg-preview.png')} 
+        style={styles.logo} 
+      />
       <Text style={styles.text}>Loading your experience...</Text>
       <ActivityIndicator size="large" color="#333" />
     </View>
