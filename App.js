@@ -1,3 +1,4 @@
+import 'react-native-gesture-handler';
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -10,6 +11,9 @@ import SplashScreenPage from './screens/screensplash';
 import LoginScreen from './screens/login';
 import DashboardScreen from './screens/dashboard';
 import UpdateProfileScreen from './screens/profile';
+import Profile from './screens/profile'; 
+import EditProfile from './screens/editprofile'; 
+import DocumentUpload from './screens/documentupload';
 import ForgotPasswordScreen from './screens/forgotpassword';
 
 const Stack = createStackNavigator();
@@ -160,6 +164,10 @@ export default function App() {
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Dashboard" component={DashboardScreen} />
           <Stack.Screen name="UpdateProfile" component={UpdateProfileScreen} />
+          <Stack.Screen name="Profile" component={Profile} />
+          <Stack.Screen name="EditProfile" component={EditProfile} />
+          <Stack.Screen name="DocumentUpload" component={DocumentUpload}
+          options={{ title: 'Upload Documents' }} />
         </Stack.Navigator>
       </NavigationContainer>
       <Toast 
