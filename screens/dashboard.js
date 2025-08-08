@@ -4,37 +4,63 @@ import {
   Text, 
   Image, 
   ScrollView,
-  TouchableOpacity, 
+  TouchableOpacity,
+  RefreshControl,
   Dimensions 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import styles from '../styles/dashboardstyles';
-import DynamicSwipeButton from '../components/DynamicSwipeButton';
+import BottomNavBar from '../components/BottomNav';
+import StatCard from '../components/StatCard';
+import ActivityItem from '../components/Activity';
+import CheckInOutCard from '../components/CheckInOutCard';
 
 const { width } = Dimensions.get('window');
 
-export default function DashboardScreen() {
+export default function DashboardScreen({ navigation }) {
+
   const [attendance, setAttendance] = useState({
     isCheckedIn: false,
     checkInTime: null,
     checkOutTime: null
   });
 
-  const activityData = [
-    { id: '1', title: 'Checked In', time: '9:00 AM' },
-    { id: '2', title: 'Break Started', time: '12:00 PM' },
-    { id: '3', title: 'Break Ended', time: '12:30 PM' },
-    { id: '4', title: 'Checked Out', time: '5:00 PM' },
-  ];
+  const [refreshing, setRefreshing] = useState(false);
 
-  const dateItems = [
-    { id: '1', day: '06', weekday: 'Thu' }, 
-    { id: '2', day: '07', weekday: 'Fri' },
-    { id: '3', day: '08', weekday: 'Sat' },
-    { id: '4', day: '09', weekday: 'Sun' },
-    { id: '5', day: '10', weekday: 'Mon' },
-    { id: '6', day: '11', weekday: 'Tue' },
-    { id: '7', day: '09', weekday: 'Wed' },
+  const handleCheckInOut = () => {
+    setIsCheckedIn(!isCheckedIn);
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 1000); // simulate refresh
+  };
+
+  const userActivities = [
+    {
+      type: 'checkin',
+      title: 'Checked In',
+      date: 'Aug 7, 2025',
+      time: '08:00 AM',
+    },
+    {
+      type: 'checkout',
+      title: 'Checked Out',
+      date: 'Aug 7, 2025',
+      time: '04:00 PM',
+    },
+    {
+      type: 'shift_swap',
+      title: 'Shift Swapped',
+      date: 'Aug 6, 2025',
+      time: '12:00 PM',
+    },
+    {
+      type: 'other',
+      title: 'Unknown Activity',
+      date: 'Aug 5, 2025',
+      time: '03:30 PM',
+    },
   ];
 
   return (
@@ -52,118 +78,76 @@ export default function DashboardScreen() {
       </View>
 
       {/* Date Scroll */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false} 
-        style={styles.dateScroll}
-        contentContainerStyle={styles.dateScrollContent}
+      <ScrollView
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      showsVerticalScrollIndicator={false}
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
       >
-        {dateItems.map((item) => (
-          <TouchableOpacity 
-            key={item.id} 
-            style={[
-              styles.dateItem, 
-              item.id === '2' && styles.activeDate
-            ]}
-          >
-            <Text style={styles.dateDay}>{item.day}</Text>
-            <Text style={[
-              styles.dateWeekday,
-              item.id === '2' && styles.activeDateText
-            ]}>{item.weekday}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
 
       {/* Today Attendance */}
-      <Text style={styles.sectionTitle}>Today Attendance</Text>
-      
-      <View style={styles.cardRow}>
-        <View style={styles.attendanceCard}>
-          <Ionicons 
-            name="log-in-outline" 
-            size={20} 
-            color={attendance.checkInTime ? "#4CAF50" : "#888"} 
-          />
-          <Text style={styles.cardTitle}>Check In</Text>
-          <Text style={styles.cardValue}>
-            {attendance.checkInTime || "--:--"}
-          </Text>
-          {attendance.checkInTime && (
-            <Text style={styles.cardSub}>On Time</Text>
-          )}
-        </View>
+      <Text padding={16} style={styles.sectionTitle}>Stat this month</Text>
 
-        <View style={styles.attendanceCard}>
-          <Ionicons 
-            name="log-out-outline" 
-            size={20} 
-            color={attendance.checkOutTime ? "#F44336" : "#888"} 
-          />
-          <Text style={styles.cardTitle}>Check Out</Text>
-          <Text style={styles.cardValue}>
-            {attendance.checkOutTime || "--:--"}
-          </Text>
-        </View>
+       <View style={{ flexDirection: 'row' }}>
+        <StatCard
+          icon="calendar-today"
+          label="Days Attended"
+          value="20 Days"
+          color1="#6a11cb"
+          color2="#2575fc"
+        />
+        <StatCard
+          icon="access-time"
+          label="Total Hours"
+          value="160 hrs"
+          color1="#a16010ff"
+          color2="#ffd200"
+        />
+      </View>
+      <View style={{ flexDirection: 'row' }}>
+        <StatCard
+          icon="payments"
+          label="Total Pay"
+          value="$120,000"
+          color1="#00c6ff"
+          color2="#0f58b1ff"
+        />
+        <StatCard
+          icon="trending-up"
+          label="Overtime"
+          value="15 hrs"
+          color1="#11998e"
+          color2="#38ef7d"
+        />
       </View>
 
-      {/* Total Days Card */}
-      <View style={styles.singleCardRow}>
-        <View style={[styles.attendanceCard, styles.widerCard]}>
-          <Ionicons name="calendar-outline" size={20} color="#2979FF" />
-          <Text style={styles.cardTitle}>Total Days</Text>
-          <Text style={styles.cardValue}>28</Text>
-          <Text style={styles.cardSub}>Working Days</Text>
-        </View>
-      </View>
+      <CheckInOutCard />
 
       {/* Your Activity */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Your Activity</Text>
-        <TouchableOpacity>
-          <Text style={styles.viewAll}>View All</Text>
+        
+        <TouchableOpacity onPress={() => navigation.navigate('Activities')}>
+          <View style={styles.viewAllWrapper}>
+            <Text style={styles.viewAll}>View All</Text>
+            <Ionicons name="chevron-forward-outline" size={20} color="#f58634" />
+
+          </View>
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        style={styles.activityContainer}
-        contentContainerStyle={styles.activityContent}
-        nestedScrollEnabled={true}
-      >
-        {activityData.map((item) => (
-          <View key={item.id} style={styles.activityCard}>
-            <View style={styles.iconWrapper}>
-              <Ionicons
-                name={item.title.includes('Check') ? "log-in-outline" : "cafe-outline"}
-                size={20}
-                color="#0b184d"
-              />
-            </View>
-            <View style={styles.activityInfo}>
-              <Text style={styles.activityTitle}>{item.title}</Text>
-              <Text style={styles.activityDate}>April 17, 2023</Text>
-            </View>
-            <View style={styles.activityTimeBlock}>
-              <Text style={styles.activityTime}>{item.time}</Text>
-              <Text style={styles.activityStatus}>On Time</Text>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
 
-      {/* Dynamic Swipe Button */}
-      <DynamicSwipeButton 
-        attendance={attendance}
-        setAttendance={setAttendance}
-      />
+      <View marginBottom={100}>
+        
+          {userActivities.map((activity, index) => (
+            <ActivityItem key={index} {...activity} />
+          ))}
+    </View>
+
+     </ScrollView>
 
       {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <Ionicons name="home" size={24} color="#f58634" />
-        <Ionicons name="calendar" size={24} color="#ccc" />
-        <Ionicons name="people" size={24} color="#ccc" />
-        <Ionicons name="person" size={24} color="#ccc" />
-      </View>
+      <BottomNavBar navigation={navigation} />
     </View>
   );
 }

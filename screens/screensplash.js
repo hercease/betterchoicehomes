@@ -15,23 +15,12 @@ export default function SplashScreenPage({ navigation }) {
         // Minimum display time (2 seconds)
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // Check authentication and profile status
+        // Check if user is authenticated
         const token = await AsyncStorage.getItem('authToken');
-        const userProfile = await AsyncStorage.getItem('userProfile');
-        const userDocuments = await AsyncStorage.getItem('userDocuments');
-
-        if (!token) {
-          if (isMounted) navigation.replace('Login');
-          return;
-        }
-
-        if (userProfile && userDocuments) {
-          await AsyncStorage.setItem('profileComplete', 'true');
+        if (token) {
           if (isMounted) navigation.replace('Dashboard');
-        } else if (userProfile && !userDocuments) {
-          if (isMounted) navigation.replace('DocumentUpload');
         } else {
-          if (isMounted) navigation.replace('EditProfile');
+          if (isMounted) navigation.replace('Login');
         }
   
       } catch (e) {

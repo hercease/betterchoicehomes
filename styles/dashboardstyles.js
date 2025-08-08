@@ -6,13 +6,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingHorizontal: 16,
+    paddingHorizontal: 15,
     paddingTop: 50,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 15,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    zIndex: 10,
   },
   profileImage: {
     width: 50,
@@ -167,14 +173,29 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#ddd',
     backgroundColor: '#fff',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    marginBottom: 50
+  },
+  tabIcon: {
+    width: 24,
+    height: 24,
+  },
+  tab: {
+    alignItems: 'center',
+  },
+  tabText: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 2,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#0b184d',
-    marginLeft: 16,
-    marginTop: 15,      // Added top margin
-    marginBottom: 15,
+    padding: 15,
   },
   
   cardSub: {
@@ -186,8 +207,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 5,
     marginTop: 24,
+    marginBottom:20
   },
   sectionTitle: {
     fontSize: 16,
@@ -199,10 +221,15 @@ const styles = StyleSheet.create({
     color: '#f58634',
     fontWeight: '500',
   },
+  viewAllWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4, // optional spacing (if you're using React Native >= 0.71)
+  },
 
   activityContainer: {
-    height: 220, // Shows ~3-4 items (adjust based on your item height)
-    marginHorizontal: 5,
+    width: 'auto', // Shows ~3-4 items (adjust based on your item height)
+    marginHorizontal: 0,
     marginTop: 10,
     marginBottom: 20,
   },
@@ -215,7 +242,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     marginHorizontal: 16,
     marginBottom: 12,
-    padding: 12,
+    padding: 9,
     borderRadius: 12,
     shadowColor: '#000',
     shadowOpacity: 0.05,
@@ -257,6 +284,7 @@ const styles = StyleSheet.create({
     color: '#7a7a7a',
     marginTop: 2,
   },
+  
   
   
 });

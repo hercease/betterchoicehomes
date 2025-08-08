@@ -1,155 +1,183 @@
-import React, { useEffect, useState } from 'react'; 
-import { View, Text, TouchableOpacity, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import styles from '../styles/profilestyles';
+import BottomNavBar from '../components/BottomNav';
 
-const Profile = ({ navigation }) => {
-  const [userData, setUserData] = useState({
-    name: 'Michael Mirc',
-    role: 'Lead UI/UX Designer'
-  });
+export default function ProfilePage ({navigation}) {
+ const [refreshing, setRefreshing] = useState(false);
+ const getInitials = (fullName) => {
+  const names = fullName.trim().split(' ');
+  if (names.length === 1) return names[0][0].toUpperCase();
+  return `${names[0][0]}${names[1][0]}`.toUpperCase();
+};
 
-  const menuItems = [
-    { 
-      id: '1', 
-      title: 'Edit Profile', 
-      icon: 'create-outline', 
-      action: () => navigation.navigate('EditProfile')
-    },
-    { 
-      id: '2', 
-      title: 'Account Settings', 
-      icon: 'settings-outline',
-      action: () => {} 
-    },
-    { 
-      id: '3', 
-      title: 'Notifications', 
-      icon: 'notifications-outline',
-      action: () => {} 
-    },
-    { 
-      id: '4', 
-      title: 'Terms & Privacy', 
-      icon: 'shield-checkmark-outline',
-      action: () => {} 
-    },
-    { 
-      id: '5', 
-      title: 'Log out', 
-      icon: 'log-out-outline', 
-      color: '#f44336',
-      action: () => handleLogout()
-    },
-  ];
-
-  const bottomTabs = [
-    { id: 'home', icon: 'home', screen: 'Dashboard' },
-    { id: 'calendar', icon: 'calendar', screen: 'Calendar' },
-    { id: 'profile', icon: 'person', screen: 'Profile' },
-  ];
-
-  // Data loading effect
-  useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        const storedData = await AsyncStorage.getItem('userProfile');
-        if (storedData) {
-          setUserData(JSON.parse(storedData));
-        }
-      } catch (error) {
-        console.error('Failed to load user data', error);
-        Alert.alert('Error', 'Failed to load profile data');
-      }
-    };
-
-    const unsubscribe = navigation.addListener('focus', loadUserData);
-    loadUserData();
-    return unsubscribe;
-  }, [navigation]);
-
-  const handleLogout = () => {
-    Alert.alert(
-      'Log Out',
-      'Are you sure you want to log out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Log Out', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await AsyncStorage.clear();
-              navigation.replace('Login');
-            } catch (error) {
-              console.error('Logout failed', error);
-              Alert.alert('Error', 'Failed to log out');
-            }
-          }
-        }
-      ]
-    );
+  const user = {
+    name: 'Jane Doe',
+    email: 'jane.doe@example.com',
+    phone: '+234 810 000 0000',
+    fullName: 'Jane Doe',
+    gender: 'Female',
+    dob: 'Jan 1, 1998',
+    address: '12, Unity Road, Lagos',
+    documents: [
+      { tag: 'National ID', title: 'nid_front.jpg' },
+      { tag: 'Utility Bill', title: 'nepa_march_2025.pdf' },
+      { tag: 'Passport', title: 'passport_photo.jpg' },
+    ],
   };
 
-  const handleMenuItemPress = (item) => {
-    item.action();
-  };
+ 
 
-  const handleTabPress = (tab) => {
-    navigation.navigate(tab.screen);
+  const onRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 1000); // simulate refresh
   };
 
   return (
     <View style={styles.container}>
-      {/* Profile Header */}
-      <View style={styles.profileHeader}>
-        <View style={styles.avatarPlaceholder}>
-          <Ionicons name="person" size={40} color="#fff" />
+      {/* Fixed Header */}
+      <View style={styles.header}>
+        <View style={styles.initialsAvatar}>
+          <Text style={styles.initialsText}>{getInitials(user.fullName)}</Text>
         </View>
-        <Text style={styles.userName}>{userData.name}</Text>
-        <Text style={styles.userRole}>{userData.role}</Text>
       </View>
 
-      {/* Menu Items */}
-      <View style={styles.menuContainer}>
-        {menuItems.map((item) => (
-          <TouchableOpacity
-            key={item.id}
-            style={styles.menuItem}
-            onPress={() => handleMenuItemPress(item)}
-          >
-            <View style={styles.menuIconContainer}>
-              <Ionicons 
-                name={item.icon} 
-                size={22} 
-                color={item.color || '#0b184d'} 
-              />
-              <Text style={styles.menuText}>{item.title}</Text>
+      {/* Scrollable Content */}
+      <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />} contentContainerStyle={styles.scrollContent}>
+        {/* Personal Info */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}><Ionicons name="person" size={14} /> Personal Information</Text>
+          <View style={styles.infoGroup}><Text style={styles.label}>Email</Text><Text style={styles.infoText}>{user.email}</Text></View>
+          <View style={styles.infoGroup}><Text style={styles.label}>Phone Number</Text><Text style={styles.infoText}>{user.phone}</Text></View>
+          <View style={styles.infoGroup}><Text style={styles.label}>Gender</Text><Text style={styles.infoText}>{user.gender}</Text></View>
+          <View style={styles.infoGroup}><Text style={styles.label}>Date of Birth</Text><Text style={styles.infoText}>{user.dob}</Text></View>
+          <View style={styles.infoGroup}><Text style={styles.label}>Address</Text><Text style={styles.infoText}>{user.address}</Text></View>
+        </View>
+
+        {/* Documents */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}><Ionicons name="document" size={14} /> Uploaded Documents</Text>
+          {user.documents.map((doc, index) => (
+            <View key={index} style={styles.infoGroup}>
+              <Text style={styles.label}>{doc.tag}</Text>
+              <View style={styles.documentRow}>
+                <Text style={styles.infoText}>{doc.title}</Text>
+                <Ionicons
+                  name={doc.confirmed ? 'checkmark-circle' : 'close-circle'}
+                  size={18}
+                  color={doc.confirmed ? 'green' : 'red'}
+                  style={{ marginLeft: 8 }}
+                />
+              </View>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#ccc" />
-          </TouchableOpacity>
-        ))}
-      </View>
+          ))}
+        </View>
 
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        {bottomTabs.map((tab) => (
-          <TouchableOpacity
-            key={tab.id}
-            style={styles.tab}
-            onPress={() => handleTabPress(tab)}
-          >
-            <Ionicons
-              name={tab.icon}
-              size={24}
-              color={tab.id === 'profile' ? '#f58634' : '#888'}
-            />
-          </TouchableOpacity>
-        ))}
-      </View>
+        {/* Edit Button */}
+        <TouchableOpacity onPress={() => navigation.navigate('EditProfile')} style={styles.editButton}>
+          <Text style={styles.editButtonText}>Edit Profile</Text>
+        </TouchableOpacity>
+      </ScrollView>
+       {/* Bottom Navigation */}
+      <BottomNavBar navigation={navigation} />
     </View>
   );
 };
 
-export default Profile;
+
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    paddingTop: 50,
+  },
+  header: {
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    paddingVertical: 20,
+    borderBottomColor: '#ddd',
+    zIndex: 10,
+  },
+  avatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 3,
+    borderColor: '#f58634',
+    marginBottom: 8,
+  },
+  name: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#0b184d',
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 130,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+    color: '#0b184d',
+  },
+  infoGroup: {
+    marginBottom: 14,
+  },
+  label: {
+    fontSize: 13,
+    color: '#777',
+    marginBottom: 3,
+  },
+  infoText: {
+    fontSize: 15,
+    color: '#333',
+    fontWeight: '500',
+  },
+  editButton: {
+    backgroundColor: '#f58634',
+    paddingVertical: 14,
+    borderRadius: 30,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  editButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  documentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  initialsAvatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#f58634', // You can randomize color if you want
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  initialsText: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: 'bold',
+  },
+
+});

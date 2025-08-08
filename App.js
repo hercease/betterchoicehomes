@@ -15,6 +15,8 @@ import Profile from './screens/profile';
 import EditProfile from './screens/editprofile'; 
 import DocumentUpload from './screens/documentupload';
 import ForgotPasswordScreen from './screens/forgotpassword';
+import ActivitiesScreen from './screens/activities';
+import ActivityDetailsScreen from './screens/activitydetails';
 
 const Stack = createStackNavigator();
 
@@ -166,6 +168,8 @@ export default function App() {
           <Stack.Screen name="UpdateProfile" component={UpdateProfileScreen} />
           <Stack.Screen name="Profile" component={Profile} />
           <Stack.Screen name="EditProfile" component={EditProfile} />
+          <Stack.Screen name="Activities" component={ActivitiesScreen} />
+          <Stack.Screen name="ActivityDetails" component={ActivityDetailsScreen} />
           <Stack.Screen name="DocumentUpload" component={DocumentUpload}
           options={{ title: 'Upload Documents' }} />
         </Stack.Navigator>

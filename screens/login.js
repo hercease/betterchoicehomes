@@ -16,14 +16,20 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useForm, Controller } from 'react-hook-form';
+import Toast from 'react-native-toast-message';
 
 const { width } = Dimensions.get('window');
 
 export default function LoginScreen({ navigation }) {
-  const { control, handleSubmit, formState: { errors } } = useForm();
   const [isLoading, setIsLoading] = useState(false);
-  const buttonScale = new Animated.Value(1);
   const [showPassword, setShowPassword] = useState(false);
+  const buttonScale = new Animated.Value(1);
+
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm();
 
   const animateButton = () => {
     Animated.sequence([
@@ -44,40 +50,27 @@ export default function LoginScreen({ navigation }) {
     animateButton();
     setIsLoading(true);
 
-    // Simulated API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    // Mock token
-    await AsyncStorage.setItem('authToken', 'mocked_token');
-
-    // Check if user profile is already completed
     try {
-      const savedProfile = await AsyncStorage.getItem('userProfile');
-      const savedDocuments = await AsyncStorage.getItem('userDocuments');
-      setIsLoading(false);
+      // Simulate network request
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      if (!savedProfile) {
-        navigation.replace('EditProfile');  // First step
-      } else if (!savedDocuments) {
-        navigation.replace('DocumentUpload'); // Second step
-      } else {
-        navigation.replace('Dashboard'); // Only if both are done
-      }
-    } catch (error) {
+      await AsyncStorage.setItem('authToken', 'mocked_token');
+      const userStatus = { status: true }; // Simulate backend response
+
+      navigation.replace(userStatus.status ? 'Dashboard' : 'UpdateProfile');
+    } catch (err) {
+      Toast.show({
+        type: 'error',
+        text1: 'Login Failed',
+        text2: 'An error occurred during login',
+      });
+    } finally {
       setIsLoading(false);
-      navigation.replace('EditProfile');
     }
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
-
   return (
-    <LinearGradient
-      colors={['#fcb084ff', '#6786eeff']}
-      style={styles.container}
-    >
+    <LinearGradient colors={['#fcb084ff', '#6786eeff']} style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoid}
@@ -94,91 +87,70 @@ export default function LoginScreen({ navigation }) {
           <Text style={styles.title}>Welcome Back</Text>
           <Text style={styles.subtitle}>Sign in to continue</Text>
 
-          {/* Email Input */}
           <View style={styles.inputContainer}>
             <Controller
               control={control}
               name="email"
-              rules={{
-                required: 'Email is required',
-                pattern: {
-                  value: /^\S+@\S+$/i,
-                  message: 'Invalid email address',
-                },
-              }}
-              render={({ field: { onChange, value } }) => (
+              rules={{ required: 'Email is required' }}
+              render={({ field: { onChange, onBlur, value } }) => (
                 <TextInput
                   placeholder="Email"
                   placeholderTextColor="#999"
-                  value={value}
-                  onChangeText={onChange}
                   style={styles.input}
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  value={value}
                   keyboardType="email-address"
                   autoCapitalize="none"
                 />
               )}
             />
           </View>
-          {errors.email && (
-            <Text style={styles.errorText}>{errors.email.message}</Text>
-          )}
+          {errors.email && <Text style={styles.errorText}>{errors.email.message}</Text>}
 
-          {/* Password Input */}
           <View style={styles.inputContainer}>
             <Controller
               control={control}
               name="password"
               rules={{ required: 'Password is required' }}
-              render={({ field: { onChange, value } }) => (
+              render={({ field: { onChange, onBlur, value } }) => (
                 <TextInput
                   placeholder="Password"
                   placeholderTextColor="#999"
-                  value={value}
-                  onChangeText={onChange}
                   style={styles.input}
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  value={value}
                   secureTextEntry={!showPassword}
                 />
               )}
             />
-            <TouchableOpacity
-              style={styles.eyeIcon}
-              onPress={togglePasswordVisibility}
-            >
-              <Ionicons
-                name={showPassword ? 'eye-off' : 'eye'}
-                size={24}
-                color="#666"
-              />
+            <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowPassword(!showPassword)}>
+              <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={24} color="#666" />
             </TouchableOpacity>
           </View>
-          {errors.password && (
-            <Text style={styles.errorText}>{errors.password.message}</Text>
-          )}
+          {errors.password && <Text style={styles.errorText}>{errors.password.message}</Text>}
 
-          {/* Forgot Password */}
           <TouchableOpacity
-            onPress={() => navigation.navigate('ForgotPassword')}
+            onPress={() => Toast.show({ type: 'info', text1: 'Coming soon!' })}
             style={styles.forgotButton}
           >
             <Text style={styles.forgotText}>Forgot Password?</Text>
           </TouchableOpacity>
 
-          {/* Submit Button */}
           <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
             <TouchableOpacity
               style={styles.button}
               onPress={handleSubmit(onSubmit)}
               activeOpacity={0.9}
             >
-              {isLoading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.buttonText}>LOG IN</Text>
-              )}
+              {isLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>LOG IN</Text>}
             </TouchableOpacity>
           </Animated.View>
         </View>
       </KeyboardAvoidingView>
+
+      <Toast position="top" visibilityTime={3000} />
     </LinearGradient>
   );
 }
@@ -257,9 +229,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   errorText: {
-    color: '#c0392b',
-    marginBottom: 10,
-    marginLeft: 5,
+    color: 'red',
     fontSize: 13,
+    marginBottom: 10,
+    marginLeft: 10,
   },
 });
