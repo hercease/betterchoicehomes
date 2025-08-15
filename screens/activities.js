@@ -1,28 +1,36 @@
-import React from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator
+} from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { API_URL } from '@env';
+import Storage from '../components/storage';
 
-const activitiesData = [
-  { id: '1', type: 'checkin', title: 'Checked in at Office', date: 'Aug 5, 2025', time: '09:02 AM' },
-  { id: '2', type: 'checkout', title: 'Checked out from Office', date: 'Aug 5, 2025', time: '05:30 PM' },
-  { id: '3', type: 'break', title: 'Break started', date: 'Aug 5, 2025', time: '01:00 PM' },
-  { id: '4', type: 'resume', title: 'Resumed from break', date: 'Aug 5, 2025', time: '01:30 PM' },
-];
-
-const getIcon = (type) => {
-  switch (type) {
-    case 'checkin': return { name: 'login', color: '#4CAF50' };
-    case 'checkout': return { name: 'logout', color: '#F44336' };
-    case 'break': return { name: 'free-breakfast', color: '#FF9800' };
-    case 'resume': return { name: 'play-arrow', color: '#2196F3' };
-    default: return { name: 'info', color: '#9E9E9E' };
+// Helper: return icon details based on action
+const getIcon = (action) => {
+  switch (action) {
+    case 'check-in':
+      return { name: 'login', color: '#4caf50', title: 'Checked In' };
+    case 'check-out':
+      return { name: 'logout', color: '#f44336', title: 'Checked Out' };
+    case 'shift-swap':
+      return { name: 'swap-horiz', color: '#2196f3', title: 'Shift Swap' };
+    case 'update-document':
+      return { name: 'description', color: '#cc990eff', title: 'Document Update' };
+    default:
+      return { name: 'info', color: '#9e9e9e', title: 'Info' };
   }
 };
 
-const ActivityItem = ({ type, title, date, time, onPress }) => {
-  const icon = getIcon(type);
-
+const ActivityItem = ({ action, date, onPress }) => {
+  const icon = getIcon(action);
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -32,7 +40,7 @@ const ActivityItem = ({ type, title, date, time, onPress }) => {
         marginBottom: 12,
         padding: 12,
         backgroundColor: '#f8f8f8',
-        borderRadius: 12,
+        borderRadius: 12
       }}
     >
       <MaterialIcons
@@ -42,10 +50,8 @@ const ActivityItem = ({ type, title, date, time, onPress }) => {
         style={{ marginRight: 12 }}
       />
       <View>
-        <Text style={{ fontWeight: '600', fontSize: 16 }}>{title}</Text>
-        <Text style={{ color: '#555', fontSize: 12 }}>
-          {date} • {time}
-        </Text>
+        <Text style={{ fontWeight: '600', fontSize: 16 }}>{icon.title}</Text>
+        <Text style={{ color: '#555', fontSize: 12 }}>{date}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -53,8 +59,102 @@ const ActivityItem = ({ type, title, date, time, onPress }) => {
 
 export default function ActivitiesScreen() {
   const navigation = useNavigation();
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [email, setEmail] = useState('');
 
+  // Fetch activities from API
+  const fetchActivities = useCallback(
+    async (currentPage = 1, isRefreshing = false) => {
+      if (!email) return;
 
+      if (isRefreshing) {
+        setRefreshing(true);
+        setPage(1);
+      } else {
+        setLoading(true);
+      }
+
+      try {
+        const params = new URLSearchParams();
+        params.append('email', email);
+        params.append('page', currentPage);
+        params.append('per_page', 10);
+
+        const res = await fetch(`${API_URL}/fetchallactivities`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params.toString()
+        });
+
+        const data = await res.json();
+        //console.log('Total pages:', data?.data?.pagination?.total_pages);
+
+        if (data.status) {
+          setActivities((prev) =>
+            currentPage === 1 ? data.data : [...prev, ...data.data]
+          );
+          setTotalPages(data?.data?.pagination?.total_pages || 1);
+          setPage(currentPage);
+        }
+      } catch (error) {
+        //console.error('Error fetching activities:', error);
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Error fetching activities:', error,
+        });
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [email] // ✅ removed `activities` to stop infinite loop
+  );
+
+  //console.log(activities.data);
+
+  // Load user email once on mount
+  useEffect(() => {
+    const loadEmail = async () => {
+      const userEmail = await Storage.getItem('userToken');
+      if (!userEmail) {
+        navigation.replace('Login');
+        return;
+      }
+      setEmail(userEmail);
+    };
+    loadEmail();
+  }, []);
+
+  // Fetch activities when email is available
+  useEffect(() => {
+    if (email) {
+      fetchActivities(1);
+    }
+  }, [email, fetchActivities]);
+
+  const handleRefresh = () => {
+    fetchActivities(1, true);
+  };
+
+  const handleLoadMore = () => {
+    if (page < totalPages && !loading) {
+      fetchActivities(page + 1);
+    }
+  };
+
+  const renderFooter = () => {
+    if (!loading) return null;
+    return (
+      <View style={{ paddingVertical: 20 }}>
+        <ActivityIndicator size="small" color="#0b184d" />
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -68,8 +168,8 @@ export default function ActivitiesScreen() {
 
       {/* List */}
       <FlatList
-        data={activitiesData}
-        keyExtractor={(item) => item.id}
+        data={activities.data}
+        keyExtractor={(item) => String(item.id)}
         contentContainerStyle={{ paddingBottom: 20 }}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
@@ -78,10 +178,24 @@ export default function ActivitiesScreen() {
             onPress={() => navigation.navigate('ActivityDetails', { activity: item })}
           />
         )}
+        ListEmptyComponent={
+          !loading ? <Text style={styles.emptyText}>No activities found</Text> : null
+        }
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={['#0b184d']}
+          />
+        }
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={renderFooter}
       />
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {

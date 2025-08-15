@@ -24,6 +24,62 @@ export default function ForgotPasswordScreen({ navigation }) {
   const [isLoading, setIsLoading] = useState(false);
   const buttonScale = new Animated.Value(1);
 
+  const onSubmit = async (data) => {
+      animateButton(); // optional animation
+      setIsLoading(true);
+  
+      try {
+        // For x-www-form-urlencoded (no FormData needed)
+        const params = new URLSearchParams();
+        params.append('email', data.email);
+  
+        // Send request
+        const response = await fetch('http://192.168.46.108/betterchoicehomesapi/forgot', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: params.toString(), // URLSearchParams handles encoding
+        });
+  
+        const result = await response.json();
+  
+        if (!response.ok) {
+          throw new Error(result.message || 'Login failed');
+        }
+  
+        if (result.status === true) {
+          // Save token & email
+          Toast.show({
+            type: 'success',
+            text1: 'Successful',
+            text2: result.message || 'Invalid credentials',
+          });
+
+            setTimeout(() => {
+              navigation.navigate('Login');
+            }, 4000);
+
+        } else {
+
+          Toast.show({
+            type: 'error',
+            text1: 'Error',
+            text2: result.message || 'Invalid credentials',
+          });
+
+        }
+      } catch (err) {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: err.message || 'An error occurred',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
   const animateButton = () => {
     Animated.sequence([
       Animated.timing(buttonScale, {
@@ -39,24 +95,7 @@ export default function ForgotPasswordScreen({ navigation }) {
     ]).start();
   };
 
-  const onSubmit = async (data) => {
-    animateButton();
-    setIsLoading(true);
 
-    // Simulate network request
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsLoading(false);
-
-    Toast.show({
-      type: 'success',
-      text1: 'Reset Email Sent',
-      text2: `Check your inbox for instructions`,
-      position: 'bottom',
-    });
-
-    // Optionally, navigate back to login
-    navigation.goBack();
-  };
 
   return (
     <LinearGradient colors={['#fcb084ff', '#6786eeff']} style={styles.container}>
@@ -179,7 +218,7 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: '#053c8dff',
     paddingVertical: 14,
-    borderRadius: 8,
+    borderRadius: 18,
     marginTop: 10,
   },
   buttonText: {

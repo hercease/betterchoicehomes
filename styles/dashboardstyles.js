@@ -284,6 +284,51 @@ const styles = StyleSheet.create({
     color: '#7a7a7a',
     marginTop: 2,
   },
+  initialsAvatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#f58634', // You can randomize color if you want
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 2 },
+    marginRight:10
+  },
+  initialsText: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: 'bold',
+  },
+  errorText: {
+    fontSize: 18,
+    color: '#ff4444',
+    marginBottom: 10,
+  },
+  errorSubText: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#0b184d',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 5,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 16,
+  },
+  noActivitiesText: {
+    textAlign: 'center',
+    color: '#666',
+    marginTop: 20,
+  }
+  
   
   
   

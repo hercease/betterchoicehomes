@@ -11,6 +11,7 @@ const BottomNavBar = ({ navigation }) => {
     { icon: 'person', label: 'Profile', screen: 'Profile' },
     { icon: 'calendar', label: 'Activities', screen: 'Activities' },
     { icon: 'settings', label: 'Settings', screen: 'Settings' },
+    { icon: 'alarm', label: 'Schedules', screen: 'Schedules' },
   ];
 
   return (

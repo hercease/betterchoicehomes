@@ -17,6 +17,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useForm, Controller } from 'react-hook-form';
 import Toast from 'react-native-toast-message';
+import Storage from '../components/storage';
+import { API_URL, APP_NAME } from '@env';
+
 
 const { width } = Dimensions.get('window');
 
@@ -46,23 +49,53 @@ export default function LoginScreen({ navigation }) {
     ]).start();
   };
 
-  const onSubmit = async (data) => {
-    animateButton();
+ const onSubmit = async (data) => {
+    animateButton(); // optional animation
     setIsLoading(true);
 
     try {
-      // Simulate network request
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // For x-www-form-urlencoded (no FormData needed)
+      const params = new URLSearchParams();
+      params.append('email', data.email);
+      params.append('password', data.password);
 
-      await AsyncStorage.setItem('authToken', 'mocked_token');
-      const userStatus = { status: true }; // Simulate backend response
+      // Send request
+      const response = await fetch(`${API_URL}/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params.toString(), // URLSearchParams handles encoding
+      });
 
-      navigation.replace(userStatus.status ? 'Dashboard' : 'UpdateProfile');
+      const result = await response.json();
+      console.log(response);
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Login failed');
+      }
+
+      
+
+      if (result.status === true) {
+        // Save token & email
+        await Storage.setItem('userToken', result.token, 1);
+
+        // Redirect based on isActive
+        navigation.replace(result.isActive ? 'Dashboard' : 'UpdateProfile');
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Login Failed',
+          text2: result.message || 'Invalid credentials',
+        });
+      }
     } catch (err) {
+      console.error('Login error:', err);
       Toast.show({
         type: 'error',
         text1: 'Login Failed',
-        text2: 'An error occurred during login',
+        text2: err.message || 'An error occurred during login',
       });
     } finally {
       setIsLoading(false);
@@ -132,7 +165,7 @@ export default function LoginScreen({ navigation }) {
           {errors.password && <Text style={styles.errorText}>{errors.password.message}</Text>}
 
           <TouchableOpacity
-            onPress={() => Toast.show({ type: 'info', text1: 'Coming soon!' })}
+            onPress={() => navigation.navigate('ForgotPassword')}
             style={styles.forgotButton}
           >
             <Text style={styles.forgotText}>Forgot Password?</Text>
@@ -149,8 +182,6 @@ export default function LoginScreen({ navigation }) {
           </Animated.View>
         </View>
       </KeyboardAvoidingView>
-
-      <Toast position="top" visibilityTime={3000} />
     </LinearGradient>
   );
 }
@@ -202,15 +233,17 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   input: {
+    borderColor: '#ddd',
+    borderRadius: 0,
+    fontSize: 16,
+    backgroundColor: '#fafafa',
     flex: 1,
     height: 56,
-    paddingHorizontal: 20,
-    backgroundColor: '#f9f9f9',
-    fontSize: 16,
+    paddingHorizontal: 20
   },
   forgotButton: {
     alignSelf: 'flex-end',
-    marginBottom: 25,
+    marginBottom: 20,
   },
   forgotText: {
     color: '#1c37afff',
@@ -218,8 +251,16 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: '#053c8dff',
-    paddingVertical: 14,
-    borderRadius: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 18,
+    shadowColor: '#5b73dfff',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   buttonText: {
     color: '#fff',
@@ -231,7 +272,6 @@ const styles = StyleSheet.create({
   errorText: {
     color: 'red',
     fontSize: 13,
-    marginBottom: 10,
-    marginLeft: 10,
+    marginBottom: 5
   },
 });

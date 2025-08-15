@@ -2,6 +2,8 @@ import React, { useEffect } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SplashScreen from 'expo-splash-screen';
+import Storage from '../components/storage';
+
 
 export default function SplashScreenPage({ navigation }) {
   useEffect(() => {
@@ -13,10 +15,10 @@ export default function SplashScreenPage({ navigation }) {
         await SplashScreen.preventAutoHideAsync();
         
         // Minimum display time (2 seconds)
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 3000));
 
         // Check if user is authenticated
-        const token = await AsyncStorage.getItem('authToken');
+        const token = await Storage.getItem('userToken');
         if (token) {
           if (isMounted) navigation.replace('Dashboard');
         } else {
@@ -44,7 +46,7 @@ export default function SplashScreenPage({ navigation }) {
         source={require('../assets/better-icon-removebg-preview.png')} 
         style={styles.logo} 
       />
-      <Text style={styles.text}>Loading your experience...</Text>
+      <Text style={styles.text}>Loading...</Text>
       <ActivityIndicator size="large" color="#333" />
     </View>
   );

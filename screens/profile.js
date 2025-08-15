@@ -1,30 +1,80 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BottomNavBar from '../components/BottomNav';
+import { API_URL, APP_NAME } from '@env';
+import Storage from '../components/storage';
+import Toast from 'react-native-toast-message';
 
 export default function ProfilePage ({navigation}) {
+
  const [refreshing, setRefreshing] = useState(false);
+ const [userDocuments, setUserDocuments] = useState([]);
+ const [loadingDocuments, setLoadingDocuments] = useState(true);
+ 
  const getInitials = (fullName) => {
   const names = fullName.trim().split(' ');
   if (names.length === 1) return names[0][0].toUpperCase();
   return `${names[0][0]}${names[1][0]}`.toUpperCase();
 };
 
-  const user = {
-    name: 'Jane Doe',
-    email: 'jane.doe@example.com',
-    phone: '+234 810 000 0000',
-    fullName: 'Jane Doe',
-    gender: 'Female',
-    dob: 'Jan 1, 1998',
-    address: '12, Unity Road, Lagos',
-    documents: [
-      { tag: 'National ID', title: 'nid_front.jpg' },
-      { tag: 'Utility Bill', title: 'nepa_march_2025.pdf' },
-      { tag: 'Passport', title: 'passport_photo.jpg' },
-    ],
-  };
+   const fetchUserDocuments = React.useCallback(async () => {
+    try {
+
+      setLoadingDocuments(true);
+      setUserDocuments([]);
+      const authToken = await Storage.getItem('userToken');
+      if (!authToken) {
+        navigation.replace('Login');
+        return;
+      }
+      const params = new URLSearchParams();
+      params.append('email', authToken);
+      const response = await fetch(`${API_URL}/fetchprofileinfo`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params.toString(), // URLSearchParams handles encoding
+      });
+      
+      if (!response.ok) throw new Error('Failed to fetch documents');
+     
+      const data = await response.json();
+       if(data.status){
+
+          //console.log(data.data);
+          setUserDocuments(data.data);
+
+          return true;
+
+       } else {
+
+          Toast.show({
+            type: 'error',
+            text1: 'Error',
+            text2: data.message
+          });
+
+       }
+      
+      
+    } catch (error) {
+      //console.error('Fetch error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Failed to load documents',
+        text2: error.message
+      });
+    } finally {
+      setLoadingDocuments(false);
+    }
+  }, [API_URL, navigation]);
+
+
+  useEffect(() => {
+    fetchUserDocuments();
+  }, []);
 
  
 
@@ -38,7 +88,7 @@ export default function ProfilePage ({navigation}) {
       {/* Fixed Header */}
       <View style={styles.header}>
         <View style={styles.initialsAvatar}>
-          <Text style={styles.initialsText}>{getInitials(user.fullName)}</Text>
+          <Text style={styles.initialsText}>{getInitials(userDocuments?.firstname + ' ' + userDocuments?.lastname)}</Text>
         </View>
       </View>
 
@@ -46,26 +96,43 @@ export default function ProfilePage ({navigation}) {
       <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />} contentContainerStyle={styles.scrollContent}>
         {/* Personal Info */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}><Ionicons name="person" size={14} /> Personal Information</Text>
-          <View style={styles.infoGroup}><Text style={styles.label}>Email</Text><Text style={styles.infoText}>{user.email}</Text></View>
-          <View style={styles.infoGroup}><Text style={styles.label}>Phone Number</Text><Text style={styles.infoText}>{user.phone}</Text></View>
-          <View style={styles.infoGroup}><Text style={styles.label}>Gender</Text><Text style={styles.infoText}>{user.gender}</Text></View>
-          <View style={styles.infoGroup}><Text style={styles.label}>Date of Birth</Text><Text style={styles.infoText}>{user.dob}</Text></View>
-          <View style={styles.infoGroup}><Text style={styles.label}>Address</Text><Text style={styles.infoText}>{user.address}</Text></View>
+          <Text style={styles.cardTitle}><Ionicons name="id-card-outline" size={14} /> Personal Information</Text>
+          <View style={styles.infoGroup}><Text style={styles.label}>FirstName</Text><Text style={styles.infoText}>{userDocuments?.firstname}</Text></View>
+          <View style={styles.infoGroup}><Text style={styles.label}>LastName</Text><Text style={styles.infoText}>{userDocuments?.lastname}</Text></View>
+          <View style={styles.infoGroup}><Text style={styles.label}>Email</Text><Text style={styles.infoText}>{userDocuments?.email}</Text></View>
+          <View style={styles.infoGroup}><Text style={styles.label}>Contact Number</Text><Text style={styles.infoText}>{userDocuments?.contact_number}</Text></View>
+          <View style={styles.infoGroup}><Text style={styles.label}>Date of Birth</Text><Text style={styles.infoText}>{userDocuments?.dob}</Text></View>
+          <View style={styles.infoGroup}><Text style={styles.label}>Address</Text><Text style={styles.infoText}>{userDocuments?.address}</Text></View>
+        </View>
+
+        {/* Bank Details */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}><Ionicons name="home-outline" size={14} /> Bank Information</Text>
+          <View style={styles.infoGroup}><Text style={styles.label}>Account No</Text><Text style={styles.infoText}>{userDocuments?.account_number}</Text></View>
+          <View style={styles.infoGroup}><Text style={styles.label}>Transit No</Text><Text style={styles.infoText}>{userDocuments?.transit_number}</Text></View>
+          <View style={styles.infoGroup}><Text style={styles.label}>Institution No</Text><Text style={styles.infoText}>{userDocuments?.institution_number}</Text></View>
+          <View style={styles.infoGroup}><Text style={styles.label}>SIN</Text><Text style={styles.infoText}>{userDocuments?.sin}</Text></View>
+        </View>
+
+        {/* Bank Details */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}><Ionicons name="car-outline" size={14} /> Driver License Information</Text>
+          <View style={styles.infoGroup}><Text style={styles.label}>Expiry Date</Text><Text style={styles.infoText}>{userDocuments?.driver_license_expiry_date}</Text></View>
+          <View style={styles.infoGroup}><Text style={styles.label}>License No</Text><Text style={styles.infoText}>{userDocuments?.driver_license_number}</Text></View>
         </View>
 
         {/* Documents */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}><Ionicons name="document" size={14} /> Uploaded Documents</Text>
-          {user.documents.map((doc, index) => (
+          {userDocuments?.documents && userDocuments?.documents.map((doc, index) => (
             <View key={index} style={styles.infoGroup}>
-              <Text style={styles.label}>{doc.tag}</Text>
+              <Text style={styles.label}>{doc.title}</Text>
               <View style={styles.documentRow}>
-                <Text style={styles.infoText}>{doc.title}</Text>
+                <Text style={styles.infoText}>{doc.name}</Text>
                 <Ionicons
-                  name={doc.confirmed ? 'checkmark-circle' : 'close-circle'}
+                  name={doc.isApproved ? 'checkmark-circle' : 'close-circle'}
                   size={18}
-                  color={doc.confirmed ? 'green' : 'red'}
+                  color={doc.isApproved ? 'green' : 'red'}
                   style={{ marginLeft: 8 }}
                 />
               </View>
