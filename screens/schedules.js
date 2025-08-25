@@ -1,6 +1,6 @@
 // Schedules.js
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, FlatList, RefreshControl } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { API_URL } from '@env';
 import Storage from '../components/storage';
@@ -8,7 +8,7 @@ import Toast from 'react-native-toast-message';
 import  ScheduleCalendar  from '../components/schedulecalendar'
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import moment from 'moment';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 
 
 LocaleConfig.locales['en'] = {
@@ -32,15 +32,20 @@ export default function ScheduleScreen({ navigation }) {
   const [selectedDate, setSelectedDate] = useState(moment().format('YYYY-MM-DD'));
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState('');
-  const [markedDates, setMarkedDates] = useState([]);
+  const [markedDates, setMarkedDates] = useState({});
   const [currentMonth, setCurrentMonth] = useState(moment().format('YYYY-MM'));
+   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
   //const navigation = useNavigation();
 
    // Fetch schedules from API
   const fetchSchedules = async () => {
     try {
+            setError(null);
+            setRefreshing(true);
             params = new URLSearchParams();
             params.append('email', email);
+            params.append('month', currentMonth);
     
             const response = await fetch(`${API_URL}/fetchmonthlyschedules`, {
               method: 'POST',
@@ -67,9 +72,11 @@ export default function ScheduleScreen({ navigation }) {
                 }
 
             } catch (error) {
-            console.error('Error fetching schedules:', error);
+                setError(error.message);
+                console.error('Error fetching schedules:', error);
             } finally {
-            setLoading(false);
+                setLoading(false);
+                setRefreshing(false);
             }
   };
 
@@ -93,20 +100,33 @@ export default function ScheduleScreen({ navigation }) {
         }
     }, [currentMonth, email]);
 
-     // Handle date selection
-  const handleDayPress = (day) => {
-    setSelectedDate(day.dateString);
-    // You can navigate to a detailed view or show a modal with schedule details
-    navigation.navigate('ScheduleDetail', { date: day.dateString });
-  };
+     // Refresh when screen comes into focus
+    /*useFocusEffect(
+        useCallback(() => {
+        if (email) fetchSchedules();
+        }, [email, fetchSchedules])
+    );*/
 
+    // Navigate to day detail
+    const handleDayPress = (day) => {
+        const dailySchedules = schedules.filter(s => s.date === day.dateString);
+        if (dailySchedules.length > 0) {
+        navigation.navigate('ScheduleDetail', { 
+            date: day.dateString,
+            schedules: dailySchedules 
+        });
+        }
+    };
+
+    // Manual refresh
     const handleRefresh = () => {
-        fetchSchedules(true);
+        if (!refreshing) fetchSchedules();
     };
 
     // Handle month change
     const handleMonthChange = (month) => {
         setCurrentMonth(moment(month.dateString).format('YYYY-MM'));
+        fetchSchedules();
     };
 
     // Get schedules for selected date
@@ -114,7 +134,31 @@ export default function ScheduleScreen({ navigation }) {
         return schedules.filter(s => s.date === date);
     };
 
-      // Get schedules for the selected date
+     // Render each schedule item
+    const renderScheduleItem = ({ item }) => (
+        <TouchableOpacity
+        style={styles.scheduleCard}
+        onPress={() => navigation.navigate('ScheduleDetails', { 
+            date: item.date,
+            schedules: [item] 
+        })}
+        >
+        <Text style={styles.dateHeader}>
+            {moment(item.date).format('dddd, MMMM D')}
+        </Text>
+        <Text style={styles.timeText}>
+            {item.start_time} - {item.end_time}
+        </Text>
+        <Text style={styles.payText}>
+            ${item.pay_per_hour}/hr (${item.expected_pay})
+        </Text>
+        {item.clockin && (
+            <Text style={styles.clockText}>
+            ⏱️ Clocked: {item.clockin} - {item.clockout || 'Not clocked out'}
+            </Text>
+        )}
+        </TouchableOpacity>
+    );
 
 
     console.log("schedule date",schedules)
@@ -155,40 +199,54 @@ export default function ScheduleScreen({ navigation }) {
             }
             }}
             theme={{
-                calendarBackground: '#962828ff',
-                todayTextColor: '#f58634',
-                dayTextColor: '#333',
-                monthTextColor: '#0b184d',
-                arrowColor: '#0b184d',
+            calendarBackground: '#fff',
+            todayTextColor: '#f58634',
+            dayTextColor: '#333',
+            monthTextColor: '#0b184d',
+            arrowColor: '#0b184d',
             }}
         />
 
         <View style={styles.listContainer}>
-            <Text style={styles.monthTitle}>
-                Schedules for {moment(currentMonth).format('MMMM YYYY')}
-            </Text>
+        <Text style={styles.monthTitle}>
+          {moment(currentMonth).format('MMMM YYYY')} Schedules
+        </Text>
         
-            <FlatList
-            data={schedules}
-            keyExtractor={(item) => String(item.id)}
-            renderItem={({ item }) => (
-                <View style={styles.scheduleCard}>
-                <Text style={styles.dateHeader}>
-                    {moment(item.date).format('dddd, MMMM D')}
-                </Text>
-                <Text>
-                    {item.start_time} - {item.end_time} • ${item.pay_per_hour}/hr
-                </Text>
-                {item.clockin && (
-                    <Text style={styles.clockText}>
-                    Clocked: {item.clockin} - {item.clockout || 'Not clocked out'}
-                    </Text>
-                )}
-                </View>
-            )}
-            />
+        {loading && !refreshing ? (
+          <ActivityIndicator size="large" color="#0b184d" style={styles.loader} />
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>⚠️ {error}</Text>
+            <TouchableOpacity onPress={fetchSchedules} style={styles.retryButton}>
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+             
 
-      </View>
+            <FlatList
+                data={schedules}
+                keyExtractor={(item) => `${item.id}_${item.date}_${item.start_time}`}
+                renderItem={renderScheduleItem}
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={handleRefresh}
+                    colors={['#0b184d']}
+                    tintColor="#0b184d"
+                />
+                }
+                ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>📅 No schedules found this month</Text>
+                    <Text style={styles.emptySubtext}>Pull down to refresh</Text>
+                </View>
+                }
+                contentContainerStyle={schedules.length === 0 && styles.emptyListContainer}
+            />
+        )}
+        </View>
 
       
     </View>
@@ -271,7 +329,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f8f8',
     padding: 15,
     borderRadius: 8,
-    marginBottom: 10
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#eee',
+    elevation: 2,
   },
   dateHeader: {
     fontWeight: 'bold',
@@ -280,5 +341,74 @@ const styles = StyleSheet.create({
   clockText: {
     color: '#666',
     marginTop: 3
-  }
+  },
+  calendar: {
+    marginBottom: 10,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  listContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  dateHeader: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginBottom: 5,
+    color: '#0b184d',
+  },
+  timeText: {
+    color: '#555',
+    marginBottom: 3,
+  },
+  payText: {
+    color: '#4CAF50',
+    fontWeight: '600',
+    marginBottom: 3,
+  },
+  clockText: {
+    color: '#666',
+    fontStyle: 'italic',
+  },
+  loader: {
+    marginTop: 40,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    color: '#F44336',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#0b184d',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+  },
+  retryText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingTop: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 5,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#999',
+  },
+  emptyListContainer: {
+    justifyContent: 'center',
+  },
 });

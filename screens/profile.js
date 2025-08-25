@@ -68,6 +68,7 @@ export default function ProfilePage ({navigation}) {
       });
     } finally {
       setLoadingDocuments(false);
+      setRefreshing(false);
     }
   }, [API_URL, navigation]);
 
@@ -80,7 +81,7 @@ export default function ProfilePage ({navigation}) {
 
   const onRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000); // simulate refresh
+    fetchUserDocuments();
   };
 
   return (
@@ -93,7 +94,7 @@ export default function ProfilePage ({navigation}) {
       </View>
 
       {/* Scrollable Content */}
-      <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />} contentContainerStyle={styles.scrollContent}>
+      <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />} contentContainerStyle={styles.scrollContent}>
         {/* Personal Info */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}><Ionicons name="id-card-outline" size={14} /> Personal Information</Text>
@@ -128,7 +129,7 @@ export default function ProfilePage ({navigation}) {
             <View key={index} style={styles.infoGroup}>
               <Text style={styles.label}>{doc.title}</Text>
               <View style={styles.documentRow}>
-                <Text style={styles.infoText}>{doc.name}</Text>
+                <Text style={styles.infoText}>{doc.file_name}</Text>
                 <Ionicons
                   name={doc.isApproved ? 'checkmark-circle' : 'close-circle'}
                   size={18}
@@ -186,12 +187,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 16,
+    padding: 10,
     marginBottom: 20,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 2 },
     shadowRadius: 6,
   },
   cardTitle: {

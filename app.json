@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "betterchoicehomes",
-    "slug": "betterchoicehomes",
+    "name": "betterchoicegrouphomes",
+    "slug": "betterchoicegrouphomes",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/android-chrome-192x192.png",
@@ -13,14 +13,23 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mycompany.myapp",
+      "infoPlist": {
+        "UIBackgroundModes": ["remote-notification"]
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/home-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.mycompany.myapp",
+      "notification": {
+        "icon": "./assets/android-chrome-192x192.png",
+        "color": "#FF231F7C" 
+      }
     },
     "web": {
       "favicon": "./assets/better-icon-removebg-preview.png"

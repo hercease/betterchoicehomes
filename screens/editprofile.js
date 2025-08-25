@@ -92,24 +92,25 @@ const onSubmit = async (data) => {
     });
 
     // 6. Handle certificate uploads (skip empty)
-    userDocuments.certifications.forEach((cert, index) => {
-      const certTag = `certificate_${index + 1}`;
-      const fieldValue = data[certTag];
-
+    userDocuments.certifications.forEach(cert => {
+      const fieldValue = data[cert.cert_tag];
       // Skip if no new file uploaded
-      if (!fieldValue?.isNewUpload) return;
+      if (fieldValue?.isNewUpload){
 
-      if (fieldValue.size > 5 * 1024 * 1024) {
-        throw new Error(`Certificate ${index + 1} exceeds 5MB limit`);
+        if (fieldValue.size > 5 * 1024 * 1024) {
+          throw new Error(`Certificate ${index + 1} exceeds 5MB limit`);
+        }
+
+        formData.append('certificates[]', {
+          uri: fieldValue.uri,
+          name: fieldValue.name,
+          type: fieldValue.type,
+        });
+        formData.append('certificate_tags[]', cert.cert_tag);
       }
-
-      formData.append('certificates[]', {
-        uri: fieldValue.uri,
-        name: fieldValue.name,
-        type: fieldValue.type,
-      });
-      formData.append('certificate_tags[]', certTag);
     });
+
+    console.log(formData);
 
     // 7. API request
     const response = await fetch(`${API_URL}/updateprofile`, {
@@ -195,6 +196,9 @@ const onSubmit = async (data) => {
               transitNumber: data.data.transit_number || '',
               institutionNumber: data.data.institution_number || '',
               accountNumber: data.data.account_number || '',
+              province: data.data.province || '',
+              city: data.data.city || '',
+              postal_code: data.data.postal_code || '',
             };
 
            if (data.data.documents) {
@@ -213,7 +217,7 @@ const onSubmit = async (data) => {
 
             if (data.data.certifications) {
               data.data.certifications.forEach((cert, index) => {
-                resetValues[`certificate_${index + 1}`] = cert.file_name
+                resetValues[cert.cert_tag] = cert.file_name
                   ? {
                       name: cert.file_name,
                       uri: cert.file_url,
@@ -259,33 +263,6 @@ const onSubmit = async (data) => {
     fetchUserDocuments();
   }, []);
 
-  const generateCertificateFields = (certifications) => {
-  const maxCerts = 5;
-  const certs = [...certifications];
-
-  // Fill remaining slots with optional empty objects
-  while (certs.length < maxCerts) {
-    certs.push({
-      file_name: "",
-      file_url: "",
-      isApproved: false,
-      optional: true // Explicitly mark empty ones as optional
-    });
-  }
-
-  return certs.map((cert, index) => ({
-    name: `certificate_${index + 1}`,
-    label: `Certificate ${index + 1}`,
-    existingDoc: cert.file_name
-      ? { ...cert, tag: `certificate_${index + 1}`, optional: cert.optional ?? true }
-      : { ...cert, tag: `certificate_${index + 1}`, optional: true }
-  }));
-};
-
-
-
-
-
   const DocumentUploadField = ({ 
   name, 
   label, 
@@ -312,7 +289,12 @@ const onSubmit = async (data) => {
       });
 
       if (!result.canceled) {
+
+       
         const file = result.assets[0];
+         if (file.size && file.size > 5 * 1024 * 1024) {
+          throw new Error("File is too large! Please choose a file smaller than 6MB.");
+        }
         const fileContent = await FileSystem.readAsStringAsync(file.uri, {
           encoding: FileSystem.EncodingType.Base64,
         });
@@ -327,7 +309,12 @@ const onSubmit = async (data) => {
         });
       }
     } catch (error) {
-      console.error('Document picker error:', error);
+      //console.error('Document picker error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Failed to load documents',
+        text2: error.message
+      });
     }
   };
 
@@ -431,6 +418,72 @@ const onSubmit = async (data) => {
             </View>
           )}
         />
+
+        <Controller
+          control={control}
+          name="city"
+          rules={{ required: 'City is required' }}
+          render={({ field: { onChange, onBlur, value } }) => (
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>City *</Text>
+              <TextInput
+                style={[styles.input, errors.city && styles.errorInput]}
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+                placeholder="City"
+                placeholderTextColor="#999"
+              />
+              {errors.city && (
+                <Text style={styles.errorText}>{errors.city.message}</Text>
+              )}
+            </View>
+          )}
+        />
+
+         <Controller
+          control={control}
+          name="province"
+          rules={{ required: 'Province is required' }}
+          render={({ field: { onChange, onBlur, value } }) => (
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Province *</Text>
+              <TextInput
+                style={[styles.input, errors.province && styles.errorInput]}
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+                placeholder="Province"
+                placeholderTextColor="#999"
+              />
+              {errors.province && (
+                <Text style={styles.errorText}>{errors.province.message}</Text>
+              )}
+            </View>
+          )}
+        />
+
+         <Controller
+          control={control}
+          name="postal_code"
+          rules={{ required: 'Postal Code is required' }}
+          render={({ field: { onChange, onBlur, value } }) => (
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Postal Code *</Text>
+              <TextInput
+                style={[styles.input, errors.postal_code && styles.errorInput]}
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+                placeholder="Postal Code"
+                placeholderTextColor="#999"
+              />
+              {errors.postal_code && (
+                <Text style={styles.errorText}>{errors.postal_code.message}</Text>
+              )}
+            </View>
+          )}
+        />
         
         <Controller
           control={control}
@@ -520,7 +573,13 @@ const onSubmit = async (data) => {
         )}
       />
 
-        <Controller
+      </View>
+
+      {/* Driver license Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Driver license Information</Text>
+
+         <Controller
           control={control}
           name="driverlicensenumber"
           rules={{ required: 'Driver license number is required' }}
@@ -582,7 +641,6 @@ const onSubmit = async (data) => {
               </View>
             )}
           />
-
       </View>
 
       {/* Bank Information Section */}
@@ -661,7 +719,7 @@ const onSubmit = async (data) => {
 
       {/* Medical Information Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Medical Information</Text>
+        <Text style={styles.sectionTitle}>Document Upload</Text>
 
           {loadingDocuments ? (
             <ActivityIndicator size="large" color="#f58634" />
@@ -687,14 +745,14 @@ const onSubmit = async (data) => {
         {loadingDocuments ? (
           <ActivityIndicator size="large" color="#f58634" />
         ) : (
-          generateCertificateFields(userDocuments?.certifications || []).map((cert) => (
+        userDocuments && userDocuments?.certifications.map((cert) => (
             <DocumentUploadField
-              key={cert.name}
-              name={cert.name}
-              label={cert.label} // Keep optional
+              key={cert.cert_tag}
+              name={cert.cert_tag}
+              label={cert.title} // Keep optional
               control={control}
               errors={errors}
-              existingDoc={cert.existingDoc}
+              existingDoc={cert}
             />
           ))
         )}

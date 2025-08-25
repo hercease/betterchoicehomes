@@ -10,8 +10,8 @@ const getIcon = (action) => {
       return { name: 'logout', color: '#f44336', title: 'Checked Out'  };
     case 'shift-swap':
       return { name: 'swap-horiz', color: '#2196f3', title: 'Shift Swap' };
-    case 'update-document':
-      return { name: 'description', color: '#cc990eff', title: 'Document Update' };
+    case 'update-profile':
+      return { name: 'person', color: '#cc990eff', title: 'Profile Update' };
     default:
       return { name: 'info', color: '#9e9e9e' }; 
   }

@@ -59,9 +59,13 @@ export default function DashboardScreen({ navigation }) {
     }
   }, []);
 
+
+
   useEffect(() => {
     loadEmail();
   }, [loadEmail]);
+
+
 
   const handleLogout = async () => {
     try {
@@ -162,7 +166,9 @@ export default function DashboardScreen({ navigation }) {
         </TouchableOpacity>
       </View>
     );
-  }
+  } 
+
+
 
   return (
     <View style={styles.container}>
@@ -229,8 +235,8 @@ export default function DashboardScreen({ navigation }) {
             icon="trending-up"
             label="Total schedule"
             value={`${userDocuments.stats.total_schedules}`}
-            color1="#11998e"
-            color2="#38ef7d"
+            color1="#bcc4c3ff"
+            color2="#9ea19fff"
           />
         </View>
 

@@ -22,9 +22,7 @@ TaskManager.defineTask(GEOFENCE_TASK, async ({ data: { eventType, region }, erro
 
     // Fetch saved email
     const email = await Storage.getItem('userToken');
-      if (!email) {
-        navigation.replace('Login');
-      }
+      if (!email) return;
 
     // Clock-out request
     const params = new URLSearchParams();
@@ -42,6 +40,9 @@ TaskManager.defineTask(GEOFENCE_TASK, async ({ data: { eventType, region }, erro
       console.log("Clock-out result:", data);
 
       if (data.success) {
+
+        await Location.stopGeofencingAsync(GEOFENCE_TASK);
+        await AsyncStorage.multiRemove(['checkin_end', 'appointmentLat', 'appointmentLng']);
 
         await Notifications.scheduleNotificationAsync({
           content: {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,50 +12,41 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { API_URL } from '@env';
 import Storage from '../components/storage';
+import Toast from 'react-native-toast-message';
 
-// Helper: return icon details based on action
-const getIcon = (action) => {
-  switch (action) {
-    case 'check-in':
-      return { name: 'login', color: '#4caf50', title: 'Checked In' };
-    case 'check-out':
-      return { name: 'logout', color: '#f44336', title: 'Checked Out' };
-    case 'shift-swap':
-      return { name: 'swap-horiz', color: '#2196f3', title: 'Shift Swap' };
-    case 'update-document':
-      return { name: 'description', color: '#cc990eff', title: 'Document Update' };
-    default:
-      return { name: 'info', color: '#9e9e9e', title: 'Info' };
-  }
-};
+// ActivityItem component moved outside and properly memoized
+const ActivityItem = React.memo(({ action, date, onPress }) => {
+  // getIcon function moved inside since we can't use hooks here
+  const getIcon = (action) => {
+    const icons = {
+      'check-in': { name: 'login', color: '#4caf50', title: 'Checked In' },
+      'check-out': { name: 'logout', color: '#f44336', title: 'Checked Out' },
+      'shift-swap': { name: 'swap-horiz', color: '#2196f3', title: 'Shift Swap' },
+      'update-profile': { name: 'person', color: '#cc990eff', title: 'Profile Update' },
+      default: { name: 'info', color: '#9e9e9e', title: 'Info' }
+    };
+    return icons[action] || icons.default;
+  };
 
-const ActivityItem = ({ action, date, onPress }) => {
   const icon = getIcon(action);
   return (
     <TouchableOpacity
       onPress={onPress}
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 12,
-        padding: 12,
-        backgroundColor: '#f8f8f8',
-        borderRadius: 12
-      }}
+      style={styles.activityItem}
     >
       <MaterialIcons
         name={icon.name}
         size={24}
         color={icon.color}
-        style={{ marginRight: 12 }}
+        style={styles.iconMargin}
       />
       <View>
-        <Text style={{ fontWeight: '600', fontSize: 16 }}>{icon.title}</Text>
-        <Text style={{ color: '#555', fontSize: 12 }}>{date}</Text>
+        <Text style={styles.activityTitle}>{icon.title}</Text>
+        <Text style={styles.activitySubtitle}>{date}</Text>
       </View>
     </TouchableOpacity>
   );
-};
+});
 
 export default function ActivitiesScreen() {
   const navigation = useNavigation();
@@ -66,121 +57,127 @@ export default function ActivitiesScreen() {
   const [totalPages, setTotalPages] = useState(1);
   const [email, setEmail] = useState('');
 
-  // Fetch activities from API
-  const fetchActivities = useCallback(
-    async (currentPage = 1, isRefreshing = false) => {
-      if (!email) return;
+  // Memoized getIcon function now correctly inside the component
+  const getIcon = useMemo(() => (action) => {
+    const icons = {
+      'check-in': { name: 'login', color: '#4caf50', title: 'Checked In' },
+      'check-out': { name: 'logout', color: '#f44336', title: 'Checked Out' },
+      'shift-swap': { name: 'swap-horiz', color: '#2196f3', title: 'Shift Swap' },
+      'update-profile': { name: 'person', color: '#cc990eff', title: 'Profile Update' },
+      default: { name: 'info', color: '#9e9e9e', title: 'Info' }
+    };
+    return icons[action] || icons.default;
+  }, []);
 
-      if (isRefreshing) {
-        setRefreshing(true);
-        setPage(1);
-      } else {
-        setLoading(true);
+  // Rest of the component remains the same...
+  const fetchActivities = useCallback(async (currentPage = 1, isRefreshing = false) => {
+    if (!email) return;
+
+    try {
+      isRefreshing ? setRefreshing(true) : setLoading(true);
+      
+      const params = new URLSearchParams();
+      params.append('email', email);
+      params.append('page', currentPage);
+      params.append('per_page', 10);
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const res = await fetch(`${API_URL}/fetchallactivities`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+
+      const data = await res.json();
+
+      if (data?.status) {
+        setActivities(prev => 
+          currentPage === 1 ? data.data : [...prev, ...data.data]
+        );
+        setTotalPages(data?.data?.pagination?.total_pages || 1);
+        setPage(currentPage);
       }
-
-      try {
-        const params = new URLSearchParams();
-        params.append('email', email);
-        params.append('page', currentPage);
-        params.append('per_page', 10);
-
-        const res = await fetch(`${API_URL}/fetchallactivities`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: params.toString()
-        });
-
-        const data = await res.json();
-        //console.log('Total pages:', data?.data?.pagination?.total_pages);
-
-        if (data.status) {
-          setActivities((prev) =>
-            currentPage === 1 ? data.data : [...prev, ...data.data]
-          );
-          setTotalPages(data?.data?.pagination?.total_pages || 1);
-          setPage(currentPage);
-        }
-      } catch (error) {
-        //console.error('Error fetching activities:', error);
+    } catch (error) {
+      if (error.name !== 'AbortError') {
         Toast.show({
           type: 'error',
           text1: 'Error',
-          text2: 'Error fetching activities:', error,
+          text2: error.message || 'Failed to fetch activities'
         });
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
       }
-    },
-    [email] // ✅ removed `activities` to stop infinite loop
-  );
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [email]);
 
-  //console.log(activities.data);
-
-  // Load user email once on mount
   useEffect(() => {
     const loadEmail = async () => {
-      const userEmail = await Storage.getItem('userToken');
-      if (!userEmail) {
+      try {
+        const userEmail = await Storage.getItem('userToken');
+        userEmail ? setEmail(userEmail) : navigation.replace('Login');
+      } catch (error) {
         navigation.replace('Login');
-        return;
       }
-      setEmail(userEmail);
     };
     loadEmail();
   }, []);
 
-  // Fetch activities when email is available
   useEffect(() => {
-    if (email) {
-      fetchActivities(1);
-    }
+    if (email) fetchActivities(1);
   }, [email, fetchActivities]);
 
-  const handleRefresh = () => {
-    fetchActivities(1, true);
-  };
+  const handleRefresh = useCallback(() => fetchActivities(1, true), [fetchActivities]);
+  const handleLoadMore = useCallback(() => {
+    if (page < totalPages && !loading) fetchActivities(page + 1);
+  }, [page, totalPages, loading, fetchActivities]);
 
-  const handleLoadMore = () => {
-    if (page < totalPages && !loading) {
-      fetchActivities(page + 1);
-    }
-  };
-
-  const renderFooter = () => {
-    if (!loading) return null;
-    return (
-      <View style={{ paddingVertical: 20 }}>
+  const renderFooter = useMemo(() => {
+    return loading ? (
+      <View style={styles.footer}>
         <ActivityIndicator size="small" color="#0b184d" />
       </View>
-    );
-  };
+    ) : null;
+  }, [loading]);
+
+  const renderEmptyComponent = useMemo(() => {
+    return !loading ? <Text style={styles.emptyText}>No activities found</Text> : null;
+  }, [loading]);
+
+  const keyExtractor = useCallback((item) => `${item.id}-${item.date}`, []);
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity 
+          onPress={navigation.goBack} 
+          style={styles.backButton}
+          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+        >
           <MaterialIcons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Activities</Text>
       </View>
 
-      {/* List */}
       <FlatList
         data={activities.data}
-        keyExtractor={(item) => String(item.id)}
-        contentContainerStyle={{ paddingBottom: 20 }}
+        keyExtractor={keyExtractor}
+        contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <ActivityItem
             {...item}
-            onPress={() => navigation.navigate('ActivityDetails', { activity: item })}
+            onPress={() => navigation.navigate('ActivityDetails', { 
+              activity: item 
+            })}
           />
         )}
-        ListEmptyComponent={
-          !loading ? <Text style={styles.emptyText}>No activities found</Text> : null
-        }
+        ListEmptyComponent={renderEmptyComponent}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -191,11 +188,13 @@ export default function ActivitiesScreen() {
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
         ListFooterComponent={renderFooter}
+        maxToRenderPerBatch={10}
+        updateCellsBatchingPeriod={50}
+        windowSize={11}
       />
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
@@ -221,18 +220,31 @@ const styles = StyleSheet.create({
   activityItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+    marginBottom: 12,
     padding: 12,
-    borderRadius: 8,
-    marginBottom: 10,
+    backgroundColor: '#f8f8f8',
+    borderRadius: 12
+  },
+  iconMargin: {
+    marginRight: 12
   },
   activityTitle: {
     fontWeight: '600',
-    fontSize: 16,
-    color: '#0b184d',
+    fontSize: 16
   },
   activitySubtitle: {
     color: '#555',
-    fontSize: 12,
+    fontSize: 12
   },
+  listContent: {
+    paddingBottom: 20
+  },
+  footer: {
+    paddingVertical: 20
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 20,
+    color: '#666'
+  }
 });
