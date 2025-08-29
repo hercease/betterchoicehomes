@@ -72,7 +72,7 @@ export default function LoginScreen({ navigation }) {
       console.log(response);
 
       if (!response.ok) {
-        throw new Error(result.message || 'Login failed');
+        throw new Error(result.message + API_URL || 'Login failed');
       }
 
       
@@ -87,7 +87,7 @@ export default function LoginScreen({ navigation }) {
         Toast.show({
           type: 'error',
           text1: 'Login Failed',
-          text2: result.message || 'Invalid credentials',
+          text2: result.message + API_URL || 'Invalid credentials',
         });
       }
     } catch (err) {
@@ -95,7 +95,7 @@ export default function LoginScreen({ navigation }) {
       Toast.show({
         type: 'error',
         text1: 'Login Failed',
-        text2: err.message || 'An error occurred during login',
+        text2: err.message + API_URL || 'An error occurred during login',
       });
     } finally {
       setIsLoading(false);
@@ -239,7 +239,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fafafa',
     flex: 1,
     height: 56,
-    paddingHorizontal: 20
+    paddingHorizontal: 20,
+    color: '#333'
   },
   forgotButton: {
     alignSelf: 'flex-end',

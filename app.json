@@ -1,41 +1,73 @@
 {
   "expo": {
-    "name": "betterchoicegrouphomes",
-    "slug": "betterchoicegrouphomes",
+    "name": "BCGH Connect",
+    "slug": "bcgh-connect",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/android-chrome-192x192.png",
+    "icon": "./assets/app-icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "description": "BCGH Connect helps staff manage attendance, schedules, and communication within Better Choice Group Homes.",
+    "privacy": "public",
+    "githubUrl": "https://github.com/hercease/betterchoicehomes",
+    "primaryColor": "#2a6ef2",
     "splash": {
-      "image": "./assets/better-icon-removebg-preview.png",
+      "image": "./assets/better-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mycompany.myapp",
+      "bundleIdentifier": "com.betterchoicegrouphomes.app",
+      "buildNumber": "1.0.0",
       "infoPlist": {
-        "UIBackgroundModes": ["remote-notification"]
+        "UIBackgroundModes": [
+          "location",
+          "fetch",
+          "remote-notification"
+        ],
+        "NSLocationWhenInUseUsageDescription": "This app uses your location while the app is open to track attendance and geofencing.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app requires background location access to track check-in/check-out even when the app is closed.",
+        "NSUserTrackingUsageDescription": "This identifier will be used to deliver notifications and improve your experience.",
+        "UIBackgroundModesDescription": "Background location is required for attendance and geofencing."
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/home-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/adaptive-icon-foreground.png",
+        "backgroundColor": "#FFFFFF"
       },
-      "edgeToEdgeEnabled": true,
-      "package": "com.mycompany.myapp",
-      "notification": {
-        "icon": "./assets/android-chrome-192x192.png",
-        "color": "#FF231F7C" 
-      }
+      "package": "com.betterchoicegrouphomes.app",
+      "versionCode": 1,
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "WAKE_LOCK",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "INTERNET",
+        "POST_NOTIFICATIONS",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "softwareKeyboardLayoutMode": "pan"
     },
     "web": {
-      "favicon": "./assets/better-icon-removebg-preview.png"
+      "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-font"
-    ]
+      "expo-splash-screen",
+      "expo-location",
+      "expo-notifications"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "b0d2c395-7ade-466d-93d5-c3955e523373"
+      }
+    }
   }
 }
