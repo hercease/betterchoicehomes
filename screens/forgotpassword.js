@@ -32,9 +32,9 @@ export default function ForgotPasswordScreen({ navigation }) {
         // For x-www-form-urlencoded (no FormData needed)
         const params = new URLSearchParams();
         params.append('email', data.email);
-  
+        const apiUrl = process.env.EXPO_PUBLIC_API_URL;
         // Send request
-        const response = await fetch('http://192.168.46.108/betterchoicehomesapi/forgot', {
+        const response = await fetch(`${apiUrl}/forgot`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',

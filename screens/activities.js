@@ -83,8 +83,8 @@ export default function ActivitiesScreen() {
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-      const res = await fetch(`${API_URL}/fetchallactivities`, {
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+      const res = await fetch(`${apiUrl}/fetchallactivities`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: params.toString(),

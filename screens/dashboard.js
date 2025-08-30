@@ -90,8 +90,8 @@ export default function DashboardScreen({ navigation }) {
 
       const params = new URLSearchParams();
       params.append('email', authToken);
-      
-      const response = await fetch(`${API_URL}/fetchprofileinfo`, {
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+      const response = await fetch(`${apiUrl}/fetchprofileinfo`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',

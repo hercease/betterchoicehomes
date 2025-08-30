@@ -27,6 +27,9 @@ export default function LoginScreen({ navigation }) {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const buttonScale = new Animated.Value(1);
+  const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+
+  console.log('API URL:', apiUrl);
 
   const {
     control,
@@ -58,9 +61,9 @@ export default function LoginScreen({ navigation }) {
       const params = new URLSearchParams();
       params.append('email', data.email);
       params.append('password', data.password);
-
+  
       // Send request
-      const response = await fetch(`${API_URL}/login`, {
+      const response = await fetch(`${apiUrl}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -72,7 +75,7 @@ export default function LoginScreen({ navigation }) {
       console.log(response);
 
       if (!response.ok) {
-        throw new Error(result.message + API_URL || 'Login failed');
+        throw new Error(result.message || 'Login failed');
       }
 
       
@@ -87,7 +90,7 @@ export default function LoginScreen({ navigation }) {
         Toast.show({
           type: 'error',
           text1: 'Login Failed',
-          text2: result.message + API_URL || 'Invalid credentials',
+          text2: result.message || 'Invalid credentials',
         });
       }
     } catch (err) {
@@ -95,7 +98,7 @@ export default function LoginScreen({ navigation }) {
       Toast.show({
         type: 'error',
         text1: 'Login Failed',
-        text2: err.message + API_URL || 'An error occurred during login',
+        text2: err.message + ' hello' || 'An error occurred during login',
       });
     } finally {
       setIsLoading(false);

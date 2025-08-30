@@ -7,15 +7,30 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "env": { "APP_ENV": ".env.development" }
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.bcghi.org",
+        "EXPO_PUBLIC_APP_NAME": "BCGH Connect",
+        "EXPO_PUBLIC_EXPO_PROJECT_ID": "b0d2c395-7ade-466d-93d5-c3955e523373",
+        "EXPO_PUBLIC_ANDROID_NOTIFICATION_COLOR": "#FF5733"
+      }
     },
     "production": {
       "releaseChannel": "production",
-      "env": { "APP_ENV": ".env.production" }
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.bcghi.org",
+        "EXPO_PUBLIC_APP_NAME": "BCGH Connect",
+        "EXPO_PUBLIC_EXPO_PROJECT_ID": "b0d2c395-7ade-466d-93d5-c3955e523373",
+        "EXPO_PUBLIC_ANDROID_NOTIFICATION_COLOR": "#FF5733"
+      }
     },
     "preview": {
       "distribution": "internal",
-      "env": { "APP_ENV": ".env.production" }
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.bcghi.org",
+        "EXPO_PUBLIC_APP_NAME": "BCGH Connect",
+        "EXPO_PUBLIC_EXPO_PROJECT_ID": "b0d2c395-7ade-466d-93d5-c3955e523373",
+        "EXPO_PUBLIC_ANDROID_NOTIFICATION_COLOR": "#FF5733"
+      }
     }
   },
   "submit": {

@@ -1,12 +1,12 @@
 {
-  "name": "betterchoicehomes",
+  "name": "betterchoicegrouphomes",
   "license": "0BSD",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web"
   },
   "dependencies": {
@@ -21,6 +21,7 @@
     "dayjs": "^1.11.13",
     "eas-cli": "^16.18.0",
     "expo": "53.0.20",
+    "expo-dev-client": "~5.2.4",
     "expo-device": "~7.1.4",
     "expo-document-picker": "~13.1.6",
     "expo-font": "~13.3.2",

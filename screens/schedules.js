@@ -46,8 +46,8 @@ export default function ScheduleScreen({ navigation }) {
             params = new URLSearchParams();
             params.append('email', email);
             params.append('month', currentMonth);
-    
-            const response = await fetch(`${API_URL}/fetchmonthlyschedules`, {
+            const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+            const response = await fetch(`${apiUrl}/fetchmonthlyschedules`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
               body: params.toString()

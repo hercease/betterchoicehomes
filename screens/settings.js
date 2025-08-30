@@ -41,8 +41,8 @@ export default function SettingsScreen({ navigation }) {
       params.append('currentPassword', data.currentPassword);
       params.append('confirmPassword', data.confirmPassword);
       params.append('timezone', timezone);
-
-      const response = await fetch(`${API_URL}/changepassword`, {
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+      const response = await fetch(`${apiUrl}/changepassword`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: params.toString(),
