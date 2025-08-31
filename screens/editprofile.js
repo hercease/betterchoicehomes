@@ -6,7 +6,6 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
-import { API_URL, APP_NAME } from '@env';
 import Storage from '../components/storage';
 import Toast from 'react-native-toast-message';
 import * as Network from 'expo-network';
@@ -383,14 +382,20 @@ const onSubmit = async (data) => {
   
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons name="arrow-back" size={24} color="#0b184d" />
-        </TouchableOpacity>
+        <View style={styles.headerSide}>
+          {userDocuments.isActive ? (
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Ionicons name="arrow-back" size={24} color="#0b184d" />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+        
         <Text style={styles.headerTitle}>Edit Profile</Text>
-        <Text></Text>
+        
+        <View style={styles.headerSide} />
       </View>
 
     <ScrollView showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#f58634', '#1c37afff']} />} contentContainerStyle={{ paddingBottom: 40 }}>
@@ -836,15 +841,23 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#0b184d',
-  },
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  paddingHorizontal: 16,
+  height: 60,
+},
+headerSide: {
+  width: 40, // Fixed width for both sides
+  alignItems: 'flex-start', // or 'flex-end' for right side
+},
+headerTitle: {
+  fontSize: 18,
+  fontWeight: 'bold',
+  color: '#0b184d',
+  textAlign: 'center',
+  flex: 1,
+},
   section: {
     backgroundColor: '#fff',
     borderRadius: 10,

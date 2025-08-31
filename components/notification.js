@@ -34,8 +34,8 @@ export async function registerForPushNotificationsAsync() {
     const params = new URLSearchParams();
     params.append('email', email);
     params.append('token', token);
-
-    await fetch(`${API_URL}/save_notification_token`, {
+    const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+    await fetch(`${apiUrl}/save_notification_token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: params.toString(),

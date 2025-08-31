@@ -11,7 +11,6 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { useForm, Controller } from 'react-hook-form';
 import Storage from '../components/storage';
-import { API_URL, APP_NAME } from '@env';
 import Toast from 'react-native-toast-message';
 
 export default function SettingsScreen({ navigation }) {

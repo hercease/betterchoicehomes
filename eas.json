@@ -6,34 +6,39 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal",
-      "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.bcghi.org",
-        "EXPO_PUBLIC_APP_NAME": "BCGH Connect",
-        "EXPO_PUBLIC_EXPO_PROJECT_ID": "b0d2c395-7ade-466d-93d5-c3955e523373",
-        "EXPO_PUBLIC_ANDROID_NOTIFICATION_COLOR": "#FF5733"
-      }
-    },
-    "production": {
-      "releaseChannel": "production",
-      "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.bcghi.org",
-        "EXPO_PUBLIC_APP_NAME": "BCGH Connect",
-        "EXPO_PUBLIC_EXPO_PROJECT_ID": "b0d2c395-7ade-466d-93d5-c3955e523373",
-        "EXPO_PUBLIC_ANDROID_NOTIFICATION_COLOR": "#FF5733"
-      }
+      "distribution": "internal"
     },
     "preview": {
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.bcghi.org",
-        "EXPO_PUBLIC_APP_NAME": "BCGH Connect",
+        "EXPO_PUBLIC_APP_NAME": "Bcgh Connect",
         "EXPO_PUBLIC_EXPO_PROJECT_ID": "b0d2c395-7ade-466d-93d5-c3955e523373",
-        "EXPO_PUBLIC_ANDROID_NOTIFICATION_COLOR": "#FF5733"
+        "EXPO_PUBLIC_ANDROID_NOTIFICATION_COLOR": "#FF5733",
+        "EXPO_PUBLIC_IOS_NOTIFICATION_COLOR": "#2a6ef2"
+      }
+    },
+    "production": {
+      "distribution": "store",
+      "releaseChannel": "production",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.bcghi.org",
+        "EXPO_PUBLIC_APP_NAME": "Bcgh Connect",
+        "EXPO_PUBLIC_EXPO_PROJECT_ID": "b0d2c395-7ade-466d-93d5-c3955e523373",
+        "EXPO_PUBLIC_ANDROID_NOTIFICATION_COLOR": "#FF5733",
+        "EXPO_PUBLIC_IOS_NOTIFICATION_COLOR": "#2a6ef2"
       }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "your-apple-id@example.com",
+        "ascAppId": "YOUR_APP_STORE_CONNECT_APP_ID"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./google-play-service.json"
+      }
+    }
   }
 }

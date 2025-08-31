@@ -7,7 +7,6 @@ import toastConfig from './components/toastConfig';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Storage from './components/storage';
-import { EXPO_PROJECT_ID, ANDROID_NOTIFICATION_ICON, ANDROID_NOTIFICATION_COLOR } from '@env';
 
 // Foreground notification handler (show alerts while app is open)
 Notifications.setNotificationHandler({
@@ -54,8 +53,8 @@ export default function App() {
           return;
         }
 
-        const token = (await Notifications.getExpoPushTokenAsync({ projectId: EXPO_PROJECT_ID })).data;
-        console.log('Expo push token:', token);
+        const token = (await Notifications.getExpoPushTokenAsync({ projectId: process.env.EXPO_PUBLIC_EXPO_PROJECT_ID })).data;
+        //console.log('Expo push token:', token);
 
         // Android channel
         if (Platform.OS === 'android') {

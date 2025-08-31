@@ -15,7 +15,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import Toast from 'react-native-toast-message';
 import { GEOFENCE_TASK } from '../tasks/geofencetask';
-import { API_URL } from '@env';
 
 const RADIUS = 50;
 const STROKE_WIDTH = 6;
@@ -125,8 +124,8 @@ const CheckInProgressButton = ({ email }) => {
       params.append('longitude', currentLocation.coords.longitude);
       params.append('action', 'clockin');
       params.append('timezone', timezone);
-
-      const response = await fetch(`${API_URL}/attendance`, {
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+      const response = await fetch(`${apiUrl}/attendance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: params.toString(),
@@ -183,8 +182,8 @@ const CheckInProgressButton = ({ email }) => {
       params.append('email', email);
       params.append('action', 'clockout');
       params.append('timezone', timezone);
-
-      await fetch(`${API_URL}/attendance`, {
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+      await fetch(`${apiUrl}/attendance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: params.toString(),

@@ -13,9 +13,9 @@ export default function SplashScreenPage({ navigation }) {
       try {
         // Keep splash screen visible
         await SplashScreen.preventAutoHideAsync();
-        
-        // Minimum display time (2 seconds)
-        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        // Minimum display time (5 seconds)
+        await new Promise(resolve => setTimeout(resolve, 5000));
 
         // Check if user is authenticated
         const token = await Storage.getItem('userToken');

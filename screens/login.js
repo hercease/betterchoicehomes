@@ -18,7 +18,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useForm, Controller } from 'react-hook-form';
 import Toast from 'react-native-toast-message';
 import Storage from '../components/storage';
-import { API_URL, APP_NAME } from '@env';
 
 
 const { width } = Dimensions.get('window');
@@ -72,7 +71,7 @@ export default function LoginScreen({ navigation }) {
       });
 
       const result = await response.json();
-      console.log(response);
+      //console.log(response);
 
       if (!response.ok) {
         throw new Error(result.message || 'Login failed');
@@ -85,7 +84,7 @@ export default function LoginScreen({ navigation }) {
         await Storage.setItem('userToken', result.token, 1);
 
         // Redirect based on isActive
-        navigation.replace(result.isActive ? 'Dashboard' : 'UpdateProfile');
+        navigation.replace(result.isActive ? 'Dashboard' : 'EditProfile');
       } else {
         Toast.show({
           type: 'error',

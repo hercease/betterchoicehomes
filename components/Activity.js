@@ -33,13 +33,13 @@ const ActivityItem = ({ action, date }) => {
       }}
     >
       <MaterialIcons
-        name={icon.name}
+        name="event"
         size={24}
-        color={icon.color}
+        color="#cc990eff"
         style={{ marginRight: 12 }}
       />
       <View>
-        <Text style={{ fontWeight: '600', fontSize: 16 }}>{icon.title}</Text>
+        <Text style={{ fontWeight: '600', fontSize: 16 }}>{action}</Text>
         <Text style={{ color: '#555', fontSize: 12 }}>
           {date}
         </Text>

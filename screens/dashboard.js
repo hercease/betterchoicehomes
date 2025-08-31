@@ -16,7 +16,6 @@ import StatCard from '../components/StatCard';
 import ActivityItem from '../components/Activity';
 import CheckInOutCard from '../components/CheckInOutCard';
 import Storage from '../components/storage';
-import { API_URL, APP_NAME } from '@env';
 import Toast from 'react-native-toast-message';
 
 const { width } = Dimensions.get('window');
@@ -130,7 +129,7 @@ export default function DashboardScreen({ navigation }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [API_URL, navigation]);
+  }, [navigation]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -183,7 +182,7 @@ export default function DashboardScreen({ navigation }) {
           <Text style={styles.userName}>
             Hi, {`${userDocuments.firstname} ${userDocuments.lastname}`}
           </Text>
-          <Text style={styles.userRole}>Staff</Text>
+          <Text style={styles.userRole}>{userDocuments.role}</Text>
         </View>
         <TouchableOpacity 
           style={styles.bellContainer}

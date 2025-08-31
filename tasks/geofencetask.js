@@ -3,7 +3,6 @@ import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Storage from '../components/storage';
-import { API_URL, APP_NAME } from '@env';
 
 export const GEOFENCE_TASK = 'GEOFENCE_TASK';
 
@@ -31,11 +30,12 @@ TaskManager.defineTask(GEOFENCE_TASK, async ({ data: { eventType, region }, erro
     params.append('timezone', timezone);
 
     try {
-        const res = await fetch(`${API_URL}/attendance`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: params.toString(),
-        });
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+      const res = await fetch(`${apiUrl}/attendance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+      });
       const data = await res.json();
       console.log("Clock-out result:", data);
 

@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { API_URL } from '@env';
 import Storage from '../components/storage';
 import Toast from 'react-native-toast-message';
 
@@ -35,13 +34,14 @@ const ActivityItem = React.memo(({ action, date, onPress }) => {
       style={styles.activityItem}
     >
       <MaterialIcons
-        name={icon.name}
+        name="event"
         size={24}
-        color={icon.color}
+        color="black"
+
         style={styles.iconMargin}
       />
       <View>
-        <Text style={styles.activityTitle}>{icon.title}</Text>
+        <Text style={styles.activityTitle}>{action}</Text>
         <Text style={styles.activitySubtitle}>{date}</Text>
       </View>
     </TouchableOpacity>

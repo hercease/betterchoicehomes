@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BottomNavBar from '../components/BottomNav';
-import { API_URL, APP_NAME } from '@env';
 import Storage from '../components/storage';
 import Toast from 'react-native-toast-message';
 

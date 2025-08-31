@@ -14,7 +14,7 @@ import moment from 'moment';
 const ScheduleDetailScreen = ({ route, navigation }) => {
   const { date, schedules } = route.params;
 
-  console.log(schedules[0].shift_type);
+  //console.log(schedules[0].shift_type);
   
   // Calculate totals for the day
   const dailyTotals = schedules.reduce((acc, curr) => {
@@ -33,7 +33,7 @@ const ScheduleDetailScreen = ({ route, navigation }) => {
           `${s.shift_type} ${s.shift_type == 'overnight' ? `(${s.overnight_type})` : ''}\n` +
           `${s.start_time} - ${s.end_time}\n` +
           `Pay: $${s.pay_per_hour}/hr\n` +
-          `${s.clockin ? `Clocked: ${s.clockin} - ${s.clockout || 'Not out'}` : 'Not clocked in'}\n`
+          `${s.clockin ? `Clocked: ${s.clockin} - ${s.clockout || 'Not Clocked out'}` : 'Not clocked in'}\n`
         )).join('\n') +
         `\nTotal: ${schedules[0].total_hours} hrs | CAD ${schedules.total_pay ? schedules[0].total_pay.toFixed(2) : 0}`;
 
@@ -109,8 +109,8 @@ const ScheduleDetailScreen = ({ route, navigation }) => {
                 !schedule.clockin && { color: '#F44336' }
               ]}>
                 {schedule.clockin 
-                  ? `${schedule.clockin} - ${schedule.clockout || 'Not out'}` 
-                  : 'Not clocked in'}
+                  ? `${schedule.clockin} - ${schedule.clockout || 'Not Clocked out'}` 
+                  : 'Absent'}
               </Text>
             </View>
           </View>
@@ -120,7 +120,7 @@ const ScheduleDetailScreen = ({ route, navigation }) => {
             <View style={styles.hoursBlock}>
               <Text style={styles.hoursLabel}>Hours Worked</Text>
               <Text style={styles.hoursValue}>
-                CAD {schedule.clockin ? schedule.hours_worked : 0.00}
+                {schedule.clockin ? schedule.hours_worked : 0.00}
               </Text>
             </View>
             <View style={styles.hoursBlock}>
