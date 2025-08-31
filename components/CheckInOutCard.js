@@ -23,7 +23,6 @@ const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 const CheckInProgressButton = ({ email }) => {
   const [checkedIn, setCheckedIn] = useState(false);
   const [remainingTime, setRemainingTime] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const animatedProgress = useRef(new Animated.Value(0)).current;
@@ -34,7 +33,7 @@ const CheckInProgressButton = ({ email }) => {
   useEffect(() => {
     const loadCheckInStatus = async () => {
       try {
-        const endTime = await AsyncStorage.getItem('checkin_end' || 0);
+        const endTime = await AsyncStorage.getItem('checkin_end');
         if (endTime) {
           const secondsLeft = Math.max(0, Math.floor((parseInt(endTime) - Date.now()) / 1000));
           if (secondsLeft > 0) {
@@ -60,7 +59,7 @@ const CheckInProgressButton = ({ email }) => {
     const endTime = Date.now() + seconds * 1000;
     AsyncStorage.setItem('checkin_end', endTime.toString());
 
-    intervalRef.current = setInterval(async () => {
+    intervalRef.current = setInterval(() => {
       const secondsLeft = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
       setRemainingTime(secondsLeft);
 
@@ -69,13 +68,12 @@ const CheckInProgressButton = ({ email }) => {
 
       if (secondsLeft <= 0) {
         clearInterval(intervalRef.current);
-        await handleAutoCheckout();
+        handleAutoCheckout();
       }
     }, 1000);
   };
 
   const requestLocationPermissions = async () => {
-    setIsProcessing(true);
     try {
       // Foreground permission
       const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
@@ -100,11 +98,8 @@ const CheckInProgressButton = ({ email }) => {
         ]
       );
       return false;
-    } finally {
-      setIsProcessing(false);
     }
   };
-
 
   const handleCheckIn = async () => {
     setIsProcessing(true);
@@ -124,6 +119,7 @@ const CheckInProgressButton = ({ email }) => {
       params.append('longitude', currentLocation.coords.longitude);
       params.append('action', 'clockin');
       params.append('timezone', timezone);
+      
       const apiUrl = process.env.EXPO_PUBLIC_API_URL;
       const response = await fetch(`${apiUrl}/attendance`, {
         method: 'POST',
@@ -141,6 +137,7 @@ const CheckInProgressButton = ({ email }) => {
       await AsyncStorage.multiSet([
         ['appointmentLat', data.latitude.toString()],
         ['appointmentLng', data.longitude.toString()],
+        ['work_seconds', data.work_seconds.toString()], // Save work_seconds
       ]);
 
       setCheckedIn(true);
@@ -182,18 +179,26 @@ const CheckInProgressButton = ({ email }) => {
       params.append('email', email);
       params.append('action', 'clockout');
       params.append('timezone', timezone);
+      
       const apiUrl = process.env.EXPO_PUBLIC_API_URL;
-      await fetch(`${apiUrl}/attendance`, {
+      const response = await fetch(`${apiUrl}/attendance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: params.toString(),
       });
 
-      setRemainingTime(0);
+      const data = await response.json();
+      
+      if (!data.status) {
+        throw new Error(data.message || 'Check-out failed');
+      }
+
       await Location.stopGeofencingAsync(GEOFENCE_TASK);
       await AsyncStorage.multiRemove(['checkin_end', 'appointmentLat', 'appointmentLng']);
 
       setCheckedIn(false);
+      setRemainingTime(0);
+      
       Toast.show({
         type: 'success',
         text1: 'Checked Out',
@@ -263,7 +268,7 @@ const CheckInProgressButton = ({ email }) => {
             { backgroundColor: checkedIn ? "#4CAF50" : "#f58634" }
           ]}>
             {isProcessing ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color="#fff" size="small" />
             ) : (
               <Text style={styles.buttonText}>
                 {checkedIn ? formatTime(remainingTime) : 'Check In'}
@@ -294,6 +299,7 @@ const CheckInProgressButton = ({ email }) => {
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setShowConfirm(false)}
+                disabled={isProcessing}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
@@ -304,7 +310,7 @@ const CheckInProgressButton = ({ email }) => {
                 disabled={isProcessing}
               >
                 {isProcessing ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color="#fff" size="small" />
                 ) : (
                   <Text style={styles.confirmButtonText}>
                     {checkedIn ? 'Check Out' : 'Check In'}
@@ -320,6 +326,7 @@ const CheckInProgressButton = ({ email }) => {
 };
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
 const styles = StyleSheet.create({
   container: {
     marginTop: 40,
@@ -335,10 +342,9 @@ const styles = StyleSheet.create({
   },
   centerContent: {
     position: 'absolute',
-    width: 87,
-    height: 87,
-    borderRadius: 42.5,
-    backgroundColor: '#f58634',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 4,
@@ -347,6 +353,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
   modalOverlay: {
     flex: 1,
@@ -364,28 +371,31 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
+    textAlign: 'center',
   },
   modalMessage: {
     fontSize: 14,
     marginBottom: 20,
+    textAlign: 'center',
   },
   modalButtons: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     gap: 10,
   },
   modalButton: {
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 5,
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cancelButton: {
     backgroundColor: '#f1f1f1',
-    borderWidth: 1,
-    borderColor: '#ddd',
   },
   cancelButtonText: {
     color: '#333',
+    fontWeight: 'bold',
   },
   confirmButton: {
     backgroundColor: '#0b184d',

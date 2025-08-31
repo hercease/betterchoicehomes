@@ -386,7 +386,7 @@ const onSubmit = async (data) => {
           {userDocuments.isActive ? (
             <TouchableOpacity
               style={styles.backButton}
-              onPress={() => navigation.goBack()}
+              onPress={() => navigation.navigate('Profile')}
             >
               <Ionicons name="arrow-back" size={24} color="#0b184d" />
             </TouchableOpacity>

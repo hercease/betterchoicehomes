@@ -37,7 +37,7 @@ export default function ScheduleScreen({ navigation }) {
     try {
       setError(null);
       setRefreshing(true);
-      params = new URLSearchParams();
+      const params = new URLSearchParams();
       params.append('email', email);
       params.append('month', currentMonth);
       const apiUrl = process.env.EXPO_PUBLIC_API_URL;
@@ -48,6 +48,8 @@ export default function ScheduleScreen({ navigation }) {
       });
 
       const data = await response.json();
+
+      console.log('Fetched schedules:', data);
 
       if (data.status) {
         setSchedules(data.data.schedules);
@@ -63,12 +65,14 @@ export default function ScheduleScreen({ navigation }) {
             // Today - blue color
             backgroundColor = '#2196F3';
           } else if (moment(date).isBefore(today)) {
-            // Past dates - yellow color
+            // Past dates - green color
             backgroundColor = '#4CAF50';
+            
           } else {
-            // Future dates - green color
+            // Future dates - yellow color
             backgroundColor = '#FFEB3B';
           }
+          
           
           formattedDates[date] = {
             selected: true,
@@ -79,7 +83,7 @@ export default function ScheduleScreen({ navigation }) {
                 borderRadius: 20,
               },
               text: {
-                color: date === today ? '#FFFFFF' : '#000000',
+                color: date === today ? '#FFFFFF' : '#ffffffff',
                 fontWeight: 'bold',
               }
             }
