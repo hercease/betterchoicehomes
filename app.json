@@ -4,7 +4,7 @@
     "slug": "bcgh-connect",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/better-icon.png",
+    "icon": "./assets/app-icon.png",
     "scheme": "bcghconnect",
     "userInterfaceStyle": "automatic",
     "description": "Bcgh Connect helps staff manage attendance, schedules, and communication within Better Choice Group Homes.",
@@ -70,7 +70,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/notification-icon.png",
+          "icon": "./assets/better-icon.png",
           "color": "#FF5733" 
         }
       ]

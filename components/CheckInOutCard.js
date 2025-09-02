@@ -137,7 +137,7 @@ const CheckInProgressButton = ({ email }) => {
       await AsyncStorage.multiSet([
         ['appointmentLat', data.latitude.toString()],
         ['appointmentLng', data.longitude.toString()],
-        ['work_seconds', data.work_seconds.toString()], // Save work_seconds
+        ['checkin_end', data.work_seconds.toString()], // Save work_seconds
       ]);
 
       setCheckedIn(true);
@@ -342,8 +342,8 @@ const styles = StyleSheet.create({
   },
   centerContent: {
     position: 'absolute',
-    width: 80,
-    height: 80,
+    width: 85,
+    height: 85,
     borderRadius: 40,
     alignItems: 'center',
     justifyContent: 'center',
