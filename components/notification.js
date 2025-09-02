@@ -2,7 +2,6 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Storage from 'storage';
-import { API_URL } from '@env';
 
 export async function registerForPushNotificationsAsync() {
   try {

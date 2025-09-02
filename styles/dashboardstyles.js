@@ -37,6 +37,7 @@ const styles = StyleSheet.create({
   userRole: {
     fontSize: 14,
     color: '#888',
+    textTransform: 'uppercase'
   },
   bellContainer: {
     padding: 5,

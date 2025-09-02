@@ -75,28 +75,100 @@ const CheckInProgressButton = ({ email }) => {
 
   const requestLocationPermissions = async () => {
     try {
-      // Foreground permission
+      // 1. Request Foreground Permission
+      console.log('Requesting foreground location permission...');
       const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
+
       if (foregroundStatus !== 'granted') {
-        throw new Error('Location permission required');
+        Alert.alert(
+          'Permission Needed',
+          'This feature requires location access to work properly. Please allow location access.',
+          [
+            {
+              text: 'Cancel',
+              style: 'cancel',
+              onPress: () => console.log('Foreground permission denied.')
+            },
+            {
+              text: 'Open Settings',
+              onPress: () => {
+                console.log('Opening settings...');
+                Linking.openSettings();
+              }
+            }
+          ]
+        );
+        return false;
       }
 
-      // Background permission
+      console.log('Foreground location permission granted.');
+
+      // 2. Check if we already have background permission
+      const { status: existingBackgroundStatus } = await Location.getBackgroundPermissionsAsync();
+      if (existingBackgroundStatus === 'granted') {
+        console.log('Background location permission already granted.');
+        return true;
+      }
+
+      // 3. Explain why background permission is essential
+      if (Platform.OS === 'ios') {
+        const userProceed = await new Promise((resolve) => {
+          Alert.alert(
+            'Essential Permission Required',
+            'This app MUST have "Always" location access to monitor your location even when closed. Without this, the check-in feature cannot work properly.',
+            [
+              {
+                text: 'Cancel Check-in',
+                style: 'cancel',
+                onPress: () => resolve(false)
+              },
+              {
+                text: 'Continue',
+                onPress: () => resolve(true)
+              }
+            ]
+          );
+        });
+
+        if (!userProceed) {
+          console.log('User declined essential background permission.');
+          return false; // ← Changed from true to false
+        }
+      }
+
+      // 4. Request Background Permission
+      console.log('Requesting essential background location permission...');
       const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
-      if (backgroundStatus !== 'granted') {
-        throw new Error('Background location permission required');
+
+      if (backgroundStatus === 'granted') {
+        console.log('Background location permission granted.');
+        return true;
+      } else {
+        console.log('Background location permission denied.');
+
+        Alert.alert(
+          'Essential Permission Required',
+          'You must enable "Allow all the time" location access for this app to use the check-in feature.',
+          [
+            {
+              text: 'Cancel',
+              style: 'cancel',
+            },
+            {
+              text: 'Open Settings',
+              onPress: () => {
+                console.log('Opening settings to enable background location...');
+                Linking.openSettings();
+              }
+            }
+          ]
+        );
+        return false; // ← Changed from true to false
       }
 
-      return true;
     } catch (error) {
-      Alert.alert(
-        'Permission Needed',
-        error.message,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Open Settings', onPress: () => Linking.openSettings() }
-        ]
-      );
+      console.error('Error requesting location permissions:', error);
+      Alert.alert('Error', 'An unexpected error occurred while requesting permissions.');
       return false;
     }
   };

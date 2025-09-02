@@ -7,6 +7,8 @@ import toastConfig from './components/toastConfig';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Storage from './components/storage';
+import { StatusBar } from 'expo-status-bar';
+import { useColorScheme } from 'react-native';
 
 // Foreground notification handler (show alerts while app is open)
 Notifications.setNotificationHandler({
@@ -33,6 +35,8 @@ import ScheduleDetailScreen from './screens/scheduledetails';
 const Stack = createStackNavigator();
 
 export default function App() {
+
+const scheme = useColorScheme();
 
   useEffect(() => {
     const setupPushNotifications = async () => {
@@ -70,8 +74,8 @@ export default function App() {
         const params = new URLSearchParams();
         params.append('email', email);
         params.append('token', token);
-
-        await fetch(`${API_URL}/save_notification_token`, {
+        const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+        await fetch(`${apiUrl}/save_notification_token`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: params.toString(),
@@ -84,6 +88,10 @@ export default function App() {
 
   return (
     <>
+     {/* Make sure system status bar is visible */}
+     
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Splash" component={SplashScreenPage} />
