@@ -130,7 +130,7 @@ export default function LoginScreen({ navigation }) {
               render={({ field: { onChange, onBlur, value } }) => (
                 <TextInput
                   placeholder="Email"
-                  placeholderTextColor="#000000ff"
+                  placeholderTextColor="#999"
                   style={styles.input}
                   onBlur={onBlur}
                   onChangeText={onChange}
@@ -151,7 +151,7 @@ export default function LoginScreen({ navigation }) {
               render={({ field: { onChange, onBlur, value } }) => (
                 <TextInput
                   placeholder="Password"
-                  placeholderTextColor="#000000ff"
+                  placeholderTextColor="#999"
                   style={styles.input}
                   onBlur={onBlur}
                   onChangeText={onChange}

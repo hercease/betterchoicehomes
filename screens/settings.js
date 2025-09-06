@@ -106,7 +106,7 @@ export default function SettingsScreen({ navigation }) {
                 errors.currentPassword && styles.errorInput,
               ]}
               placeholder="Current Password"
-              placeholderTextColor="#000000ff"
+              placeholderTextColor="#999"
               secureTextEntry
               value={value}
               onChangeText={onChange}
@@ -132,7 +132,7 @@ export default function SettingsScreen({ navigation }) {
             <TextInput
               style={[styles.input, errors.newPassword && styles.errorInput]}
               placeholder="New Password"
-              placeholderTextColor="#000000ff"
+              placeholderTextColor="#999"
               secureTextEntry
               value={value}
               onChangeText={onChange}

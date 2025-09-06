@@ -8,7 +8,8 @@ import {
   Modal,
   Animated,
   Linking,
-  ActivityIndicator
+  ActivityIndicator,
+  Platform
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -25,6 +26,8 @@ const CheckInProgressButton = ({ email }) => {
   const [remainingTime, setRemainingTime] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showDisclosure, setShowDisclosure] = useState(false);
+  const [permissionCallback, setPermissionCallback] = useState(null);
   const animatedProgress = useRef(new Animated.Value(0)).current;
   const intervalRef = useRef(null);
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -75,7 +78,6 @@ const CheckInProgressButton = ({ email }) => {
 
   const requestLocationPermissions = async () => {
     try {
-      // 1. Request Foreground Permission
       console.log('Requesting foreground location permission...');
       const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
 
@@ -103,69 +105,18 @@ const CheckInProgressButton = ({ email }) => {
 
       console.log('Foreground location permission granted.');
 
-      // 2. Check if we already have background permission
+      // Check if we already have background permission
       const { status: existingBackgroundStatus } = await Location.getBackgroundPermissionsAsync();
       if (existingBackgroundStatus === 'granted') {
         console.log('Background location permission already granted.');
         return true;
       }
 
-      // 3. Explain why background permission is essential
-      if (Platform.OS === 'ios') {
-        const userProceed = await new Promise((resolve) => {
-          Alert.alert(
-            'Essential Permission Required',
-            'This app MUST have "Always" location access to monitor your location even when closed. Without this, the check-in feature cannot work properly.',
-            [
-              {
-                text: 'Cancel Check-in',
-                style: 'cancel',
-                onPress: () => resolve(false)
-              },
-              {
-                text: 'Continue',
-                onPress: () => resolve(true)
-              }
-            ]
-          );
-        });
-
-        if (!userProceed) {
-          console.log('User declined essential background permission.');
-          return false; // ← Changed from true to false
-        }
-      }
-
-      // 4. Request Background Permission
-      console.log('Requesting essential background location permission...');
-      const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
-
-      if (backgroundStatus === 'granted') {
-        console.log('Background location permission granted.');
-        return true;
-      } else {
-        console.log('Background location permission denied.');
-
-        Alert.alert(
-          'Essential Permission Required',
-          'You must enable "Allow all the time" location access for this app to use the check-in feature.',
-          [
-            {
-              text: 'Cancel',
-              style: 'cancel',
-            },
-            {
-              text: 'Open Settings',
-              onPress: () => {
-                console.log('Opening settings to enable background location...');
-                Linking.openSettings();
-              }
-            }
-          ]
-        );
-        return false; // ← Changed from true to false
-      }
-
+      // Show disclosure modal for background permission
+      return new Promise((resolve) => {
+        setPermissionCallback(() => resolve); // Store the resolve function
+        setShowDisclosure(true); // Show the disclosure modal
+      });
     } catch (error) {
       console.error('Error requesting location permissions:', error);
       Alert.alert('Error', 'An unexpected error occurred while requesting permissions.');
@@ -350,6 +301,7 @@ const CheckInProgressButton = ({ email }) => {
         </View>
       </TouchableOpacity>
 
+      {/* Confirmation Modal */}
       <Modal
         transparent
         visible={showConfirm}
@@ -388,6 +340,80 @@ const CheckInProgressButton = ({ email }) => {
                     {checkedIn ? 'Check Out' : 'Check In'}
                   </Text>
                 )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Disclosure Modal */}
+      <Modal
+        transparent
+        visible={showDisclosure}
+        animationType="fade"
+        onRequestClose={() => {
+          setShowDisclosure(false);
+          if (permissionCallback) permissionCallback(false);
+        }}
+      >
+        <View style={styles.disclosureOverlay}>
+          <View style={styles.disclosureContent}>
+            <Text style={styles.disclosureTitle}>Background Location Access Needed</Text>
+            <Text style={styles.disclosureText}>
+              This app requires access to your location even when the app is closed or not in use. 
+              This is necessary to monitor your location during your shift and ensure accurate check-in/check-out functionality.
+            </Text>
+            <Text style={styles.disclosureSubText}>
+              You will be prompted to grant "Allow all the time" permission next.
+            </Text>
+
+            <View style={styles.disclosureButtons}>
+              <TouchableOpacity
+                style={[styles.disclosureButton, styles.disclosureCancelButton]}
+                onPress={() => {
+                  setShowDisclosure(false);
+                  if (permissionCallback) permissionCallback(false);
+                }}
+              >
+                <Text style={styles.disclosureCancelText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.disclosureButton, styles.disclosureConfirmButton]}
+                onPress={async () => {
+                  setShowDisclosure(false);
+                  
+                  // Now request background permissions
+                  console.log('Requesting essential background location permission...');
+                  const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
+
+                  if (backgroundStatus === 'granted') {
+                    console.log('Background location permission granted.');
+                    if (permissionCallback) permissionCallback(true);
+                  } else {
+                    console.log('Background location permission denied.');
+                    Alert.alert(
+                      'Essential Permission Required',
+                      'You must enable "Allow all the time" location access for this app to use the check-in feature.',
+                      [
+                        {
+                          text: 'Cancel',
+                          style: 'cancel',
+                        },
+                        {
+                          text: 'Open Settings',
+                          onPress: () => {
+                            console.log('Opening settings to enable background location...');
+                            Linking.openSettings();
+                          }
+                        }
+                      ]
+                    );
+                    if (permissionCallback) permissionCallback(false);
+                  }
+                }}
+              >
+                <Text style={styles.disclosureConfirmText}>Continue</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -473,6 +499,65 @@ const styles = StyleSheet.create({
     backgroundColor: '#0b184d',
   },
   confirmButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  // Disclosure Modal Styles
+  disclosureOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  disclosureContent: {
+    width: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+  },
+  disclosureTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'center',
+    color: '#0b184d',
+  },
+  disclosureText: {
+    fontSize: 16,
+    marginBottom: 15,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  disclosureSubText: {
+    fontSize: 14,
+    marginBottom: 20,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    color: '#666',
+  },
+  disclosureButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  disclosureButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  disclosureCancelButton: {
+    backgroundColor: '#f1f1f1',
+  },
+  disclosureCancelText: {
+    color: '#333',
+    fontWeight: 'bold',
+  },
+  disclosureConfirmButton: {
+    backgroundColor: '#0b184d',
+  },
+  disclosureConfirmText: {
     color: '#fff',
     fontWeight: 'bold',
   },
