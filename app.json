@@ -28,9 +28,6 @@
         "UIBackgroundModes": [
           "location",
           "fetch",
-          "remote-notification",
-          "location",
-          "fetch",
           "remote-notification"
         ],
         "NSLocationWhenInUseUsageDescription": "This app uses your location while the app is open to track attendance and geofencing.",
