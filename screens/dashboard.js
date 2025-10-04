@@ -7,9 +7,12 @@ import {
   RefreshControl,
   Dimensions,
   ActivityIndicator,
-  Alert
+  Alert,
+  Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
 import styles from '../styles/dashboardstyles';
 import BottomNavBar from '../components/BottomNav';
 import StatCard from '../components/StatCard';
@@ -24,6 +27,7 @@ const { width } = Dimensions.get('window');
 const DEFAULT_USER_DATA = {
   firstname: '',
   lastname: '',
+  role: '',
   stats: {
     total_days_attended: 0,
     total_hours: 0,
@@ -41,9 +45,9 @@ export default function DashboardScreen({ navigation }) {
   const [error, setError] = useState(null);
 
   const getInitials = useCallback((fullName) => {
-    if (!fullName) return '';
+    if (!fullName) return 'U'; // Default to 'U' for User
     const names = fullName.trim().split(' ');
-    if (names.length === 1) return names[0][0]?.toUpperCase() || '';
+    if (names.length === 1) return names[0][0]?.toUpperCase() || 'U';
     return `${names[0][0] || ''}${names[1][0] || ''}`.toUpperCase();
   }, []);
 
@@ -58,22 +62,86 @@ export default function DashboardScreen({ navigation }) {
     }
   }, []);
 
-
-
   useEffect(() => {
     loadEmail();
   }, [loadEmail]);
 
+  useEffect(() => {
+    const setupPushNotifications = async () => {
+      try {
+        const email = await Storage.getItem('userToken');
+        if (!email) return;
 
+        if (Device.isDevice) {
+          const { status: existingStatus } = await Notifications.getPermissionsAsync();
+          let finalStatus = existingStatus;
+
+          if (existingStatus !== 'granted') {
+            const { status } = await Notifications.requestPermissionsAsync();
+            finalStatus = status;
+          }
+
+          if (finalStatus !== 'granted') {
+            console.log('Push notifications permission denied');
+            return;
+          }
+
+          const token = (await Notifications.getExpoPushTokenAsync({ 
+            projectId: process.env.EXPO_PUBLIC_EXPO_PROJECT_ID 
+          })).data;
+
+          // Android channel
+          if (Platform.OS === 'android') {
+            await Notifications.setNotificationChannelAsync('default', {
+              name: 'default',
+              importance: Notifications.AndroidImportance.MAX,
+              vibrationPattern: [0, 250, 250, 250],
+              lightColor: '#0e2bd17c',
+            });
+          }
+
+          // Send to backend
+          const params = new URLSearchParams();
+          params.append('email', email);
+          params.append('token', token);
+          const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+          
+          await fetch(`${apiUrl}/save_notification_token`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: params.toString(),
+          });
+        }
+      } catch (error) {
+        console.error('Push notification setup failed:', error);
+        // Don't show error to user as this is not critical
+      }
+    };
+
+    setupPushNotifications();
+  }, []);
 
   const handleLogout = async () => {
-    try {
-      await Storage.removeItem('userToken');
-      navigation.replace('Login');
-    } catch (error) {
-      console.error('Logout failed:', error);
-      Alert.alert('Error', 'Failed to logout. Please try again.');
-    }
+    Alert.alert(
+      'Confirm Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Logout', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await Storage.removeItem('userToken');
+              navigation.replace('Login');
+            } catch (error) {
+              //console.error('Logout failed:', error);
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
+          }
+        }
+      ]
+    );
   };
 
   const fetchUserDocuments = useCallback(async () => {
@@ -90,6 +158,7 @@ export default function DashboardScreen({ navigation }) {
       const params = new URLSearchParams();
       params.append('email', authToken);
       const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+      
       const response = await fetch(`${apiUrl}/fetchprofileinfo`, {
         method: 'POST',
         headers: {
@@ -148,26 +217,29 @@ export default function DashboardScreen({ navigation }) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color="#0b184d" />
+        <Text style={{ marginTop: 10, color: '#666' }}>Loading your data...</Text>
       </View>
     );
   }
 
   if (error && !refreshing) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={styles.errorText}>Failed to load data</Text>
-        <Text style={styles.errorSubText}>{error}</Text>
+      <View style={errorStyles.container}>
+        <Ionicons name="warning-outline" size={64} color="#d32f2f" />
+        <Text style={errorStyles.errorText}>Failed to load data</Text>
+        <Text style={errorStyles.errorSubText}>{error}</Text>
         <TouchableOpacity 
-          style={styles.retryButton}
+          style={errorStyles.retryButton}
           onPress={fetchUserDocuments}
         >
-          <Text style={styles.retryButtonText}>Retry</Text>
+          <Text style={errorStyles.retryButtonText}>Try Again</Text>
         </TouchableOpacity>
       </View>
     );
-  } 
+  }
 
-
+  const fullName = `${userDocuments.firstname || ''} ${userDocuments.lastname || ''}`.trim();
+  const userRole = userDocuments.role || 'Employee';
 
   return (
     <View style={styles.container}>
@@ -175,20 +247,20 @@ export default function DashboardScreen({ navigation }) {
       <View style={styles.header}>
         <View style={styles.initialsAvatar}>
           <Text style={styles.initialsText}>
-            {getInitials(`${userDocuments.firstname} ${userDocuments.lastname}`)}
+            {getInitials(fullName)}
           </Text>
         </View>
         <View style={styles.userInfo}>
           <Text style={styles.userName}>
-            Hi, {`${userDocuments.firstname} ${userDocuments.lastname}`}
+            Hi, {fullName || 'User'}
           </Text>
-          <Text style={styles.userRole}>{userDocuments.role}</Text>
+          <Text style={styles.userRole}>{userRole}</Text>
         </View>
         <TouchableOpacity 
           style={styles.bellContainer}
           onPress={handleLogout}
         >
-          <Ionicons name="power-outline" size={24} color="#0b184d" />
+          <Ionicons name="power-outline" size={24} color="#ffffffff" />
         </TouchableOpacity>
       </View>
 
@@ -198,13 +270,14 @@ export default function DashboardScreen({ navigation }) {
             refreshing={refreshing} 
             onRefresh={onRefresh} 
             colors={['#0b184d']}
+            tintColor="#0b184d"
           />
         }
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
       >
-        {/* Today Attendance */}
-        <Text style={styles.sectionTitle}>Stat this month</Text>
+        {/* Stats Section */}
+        <Text style={styles.sectionTitle}>Stats this month</Text>
 
         <View style={{ flexDirection: 'row' }}>
           <StatCard
@@ -239,9 +312,10 @@ export default function DashboardScreen({ navigation }) {
           />
         </View>
 
+        {/* Check In/Out Card */}
         <CheckInOutCard email={email} />
 
-        {/* Your Activity */}
+        {/* Activity Section */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Your Activity</Text>
           <TouchableOpacity onPress={() => navigation.navigate('Activities')}>
@@ -253,12 +327,18 @@ export default function DashboardScreen({ navigation }) {
         </View>
 
         <View style={{ marginBottom: 100 }}>
-          {userDocuments.activities.length > 0 ? (
-            userDocuments.activities.map((activity, index) => (
-              <ActivityItem key={`activity-${index}`} {...activity} />
+          {userDocuments.activities && userDocuments.activities.length > 0 ? (
+            userDocuments.activities.slice(0, 5).map((activity, index) => (
+              <ActivityItem 
+                key={`activity-${index}-${activity.id || index}`} 
+                {...activity} 
+              />
             ))
           ) : (
-            <Text style={styles.noActivitiesText}>No activities found</Text>
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <Ionicons name="document-text-outline" size={48} color="#ccc" />
+              <Text style={{ color: '#666', marginTop: 10 }}>No activities found</Text>
+            </View>
           )}
         </View>
       </ScrollView>

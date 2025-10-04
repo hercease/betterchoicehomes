@@ -145,15 +145,30 @@ const lightenColor = (color, percent) => {
 };
 
 const getIcon = (action) => {
-  const icons = {
-    'check-in': { name: 'login', color: '#4caf50', title: 'Checked In' },
-    'check-out': { name: 'logout', color: '#f44336', title: 'Checked Out' },
-    'shift-swap': { name: 'swap-horiz', color: '#2196f3', title: 'Shift Swap' },
-    'update-profile': { name: 'person', color: '#ff9800', title: 'Profile Update' },
-    'time-off': { name: 'beach-access', color: '#9c27b0', title: 'Time Off' },
-    'payroll': { name: 'attach-money', color: '#009688', title: 'Payroll Update' }
-  };
-  return icons[action] || { name: 'info', color: '#9e9e9e', title: 'Activity' };
+  switch (action) {
+    case 'check-in':
+      return { name: 'login', color: '#4caf50', title: 'Checked In' };
+    case 'generate-schedule-form':
+      return { name: 'calendar-today', color: '#ff9800', title: 'Generate Schedule Form' };
+    case 'insert-schedule':
+      return { name: 'post-add', color: '#2196f3', title: 'Insert Schedule' };
+    case 'delete-user':
+      return { name: 'person-remove', color: '#f44336', title: 'Delete User' };
+    case 'update-user':
+      return { name: 'person-outline', color: '#ffeb3b', title: 'Update User' };
+    case 'update-schedule':
+      return { name: 'edit-calendar', color: '#9c27b0', title: 'Update Schedule' };
+    case 'register-user':
+      return { name: 'person-add', color: '#3f51b5', title: 'Register User' };
+    case 'check-out':
+      return { name: 'logout', color: '#f44336', title: 'Checked Out' };
+    case 'shift-swap':
+      return { name: 'swap-horiz', color: '#8bc34a', title: 'Shift Swap' };
+    case 'update-profile':
+      return { name: 'manage-accounts', color: '#cc990eff', title: 'Profile Update' };
+    default:
+      return { name: 'info', color: '#9e9e9e', title: 'Activity' };
+  }
 };
 
 const styles = StyleSheet.create({

@@ -9,7 +9,8 @@ import {
   Animated,
   Linking,
   ActivityIndicator,
-  Platform
+  Platform,
+  ScrollView
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -21,18 +22,51 @@ const RADIUS = 50;
 const STROKE_WIDTH = 6;
 const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
+// Disclosure content constants
+const DISCLOSURE_CONTENT = {
+  foreground: {
+    title: "Location Access Needed",
+    description: "We need access to your location while using the app to:",
+    features: [
+      "Record your precise check-in location",
+      "Verify your attendance location accuracy", 
+      "Ensure proper shift timing",
+      "Provide accurate work hour tracking"
+    ],
+    dataUsage: "Your location data is only used for attendance purposes and is encrypted during transmission.",
+    nextStep: "You will be prompted to grant \"Allow while using the app\" permission next."
+  },
+  background: {
+    title: "Background Location Access Needed", 
+    description: "We need background location access to:",
+    features: [
+      "Monitor your location during your entire shift",
+      "Ensure you remain within your designated work area",
+      "Automatically handle check-out if you leave early", 
+      "Provide continuous attendance monitoring",
+      "Detect geofence entry and exit events"
+    ],
+    dataUsage: "Location data is encrypted, stored securely, and automatically deleted after shift completion.",
+    nextStep: "You will be prompted to grant \"Allow all the time\" permission next."
+  }
+};
+
+const PRIVACY_POLICY_URL = "https://bcghi.org/privacy-policy/"; // Replace with your actual privacy policy URL
+
 const CheckInProgressButton = ({ email }) => {
   const [checkedIn, setCheckedIn] = useState(false);
   const [remainingTime, setRemainingTime] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showDisclosure, setShowDisclosure] = useState(false);
+  const [showForegroundDisclosure, setShowForegroundDisclosure] = useState(false);
   const [permissionCallback, setPermissionCallback] = useState(null);
+  const [currentDisclosureType, setCurrentDisclosureType] = useState('foreground');
+  
   const animatedProgress = useRef(new Animated.Value(0)).current;
   const intervalRef = useRef(null);
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-  // Check existing check-in status on mount
   useEffect(() => {
     const loadCheckInStatus = async () => {
       try {
@@ -78,48 +112,73 @@ const CheckInProgressButton = ({ email }) => {
 
   const requestLocationPermissions = async () => {
     try {
-      console.log('Requesting foreground location permission...');
-      const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
-
-      if (foregroundStatus !== 'granted') {
-        Alert.alert(
-          'Permission Needed',
-          'This feature requires location access to work properly. Please allow location access.',
-          [
-            {
-              text: 'Cancel',
-              style: 'cancel',
-              onPress: () => console.log('Foreground permission denied.')
-            },
-            {
-              text: 'Open Settings',
-              onPress: () => {
-                console.log('Opening settings...');
-                Linking.openSettings();
-              }
-            }
-          ]
-        );
-        return false;
-      }
-
-      console.log('Foreground location permission granted.');
-
-      // Check if we already have background permission
-      const { status: existingBackgroundStatus } = await Location.getBackgroundPermissionsAsync();
-      if (existingBackgroundStatus === 'granted') {
-        console.log('Background location permission already granted.');
-        return true;
-      }
-
-      // Show disclosure modal for background permission
       return new Promise((resolve) => {
-        setPermissionCallback(() => resolve); // Store the resolve function
-        setShowDisclosure(true); // Show the disclosure modal
+        setPermissionCallback(() => resolve);
+        setCurrentDisclosureType('foreground');
+        setShowForegroundDisclosure(true);
       });
     } catch (error) {
-      console.error('Error requesting location permissions:', error);
+      //console.error('Error requesting location permissions:', error);
       Alert.alert('Error', 'An unexpected error occurred while requesting permissions.');
+      return false;
+    }
+  };
+
+  const handlePermissionFlow = async (type) => {
+    try {
+      if (type === 'foreground') {
+        const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
+
+        if (foregroundStatus !== 'granted') {
+          Alert.alert(
+            'Permission Required',
+            'This feature requires location access while using the app. Please enable it to continue.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Open Settings', onPress: () => Linking.openSettings() }
+            ]
+          );
+          if (permissionCallback) permissionCallback(false);
+          return false;
+        }
+
+        //console.log('Foreground location permission granted.');
+
+        // Check if we already have background permissions
+        const { status: existingBackgroundStatus } = await Location.getBackgroundPermissionsAsync();
+        if (existingBackgroundStatus === 'granted') {
+          if (permissionCallback) permissionCallback(true);
+          return true;
+        }
+
+        // Request background permissions
+        setCurrentDisclosureType('background');
+        setShowDisclosure(true);
+        return null; // Continue to background disclosure
+
+      } else if (type === 'background') {
+        const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
+
+        if (backgroundStatus === 'granted') {
+          //console.log('Background location permission granted.');
+          if (permissionCallback) permissionCallback(true);
+          return true;
+        } else {
+          Alert.alert(
+            'Essential Permission Required',
+            'You must enable "Allow all the time" location access for this app to use the complete check-in feature. Some functionality may be limited.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Open Settings', onPress: () => Linking.openSettings() }
+            ]
+          );
+          if (permissionCallback) permissionCallback(false);
+          return false;
+        }
+      }
+    } catch (error) {
+      //console.error('Error in permission flow:', error);
+      if (permissionCallback) permissionCallback(false);
       return false;
     }
   };
@@ -130,7 +189,10 @@ const CheckInProgressButton = ({ email }) => {
     
     try {
       const hasPermission = await requestLocationPermissions();
-      if (!hasPermission) return;
+      if (!hasPermission) {
+        setIsProcessing(false);
+        return;
+      }
 
       const currentLocation = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.BestForNavigation
@@ -153,14 +215,13 @@ const CheckInProgressButton = ({ email }) => {
       const data = await response.json();
 
       if (!data.status) {
-        throw new Error(data.message || 'Check-in failed');
+        throw new Error(data.message || 'Check-in');
       }
 
-      // Save appointment location and start countdown
       await AsyncStorage.multiSet([
         ['appointmentLat', data.latitude.toString()],
         ['appointmentLng', data.longitude.toString()],
-        ['checkin_end', data.work_seconds.toString()], // Save work_seconds
+        ['checkin_end', data.work_seconds.toString()],
       ]);
 
       setCheckedIn(true);
@@ -168,7 +229,6 @@ const CheckInProgressButton = ({ email }) => {
       animatedProgress.setValue(0);
       startCountdown(data.work_seconds);
 
-      // Start geofencing
       await Location.startGeofencingAsync(GEOFENCE_TASK, [{
         identifier: `appointment_${data.appointmentId || 'default'}`,
         latitude: parseFloat(data.latitude),
@@ -180,15 +240,16 @@ const CheckInProgressButton = ({ email }) => {
 
       Toast.show({
         type: 'success',
-        text1: 'Checked In',
+        text1: 'Checked In Successfully',
         text2: `Shift started at ${new Date().toLocaleTimeString()}`,
       });
 
     } catch (error) {
+      //console.error('Check-in error:', error);
       Toast.show({
         type: 'error',
-        text1: 'Check-In Failed',
-        text2: error.message,
+        text1: 'Check-In',
+        text2: error.message || 'Unable to check in at this time',
       });
     } finally {
       setIsProcessing(false);
@@ -213,7 +274,7 @@ const CheckInProgressButton = ({ email }) => {
       const data = await response.json();
       
       if (!data.status) {
-        throw new Error(data.message || 'Check-out failed');
+        throw new Error(data.message || 'Check-out');
       }
 
       await Location.stopGeofencingAsync(GEOFENCE_TASK);
@@ -224,19 +285,106 @@ const CheckInProgressButton = ({ email }) => {
       
       Toast.show({
         type: 'success',
-        text1: 'Checked Out',
-        text2: 'Shift completed successfully',
+        text1: 'Checked Out Successfully',
+        text2: 'Shift completed and recorded',
       });
 
     } catch (error) {
+      //console.error('Check-out error:', error);
       Toast.show({
         type: 'error',
-        text1: 'Check-Out Failed',
-        text2: error.message || 'Failed to check out',
+        text1: 'Check-Out',
+        text2: error.message || 'Unable to check out at this time',
       });
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const renderDisclosureModal = (isForeground = true) => {
+    const content = isForeground ? DISCLOSURE_CONTENT.foreground : DISCLOSURE_CONTENT.background;
+    const isVisible = isForeground ? showForegroundDisclosure : showDisclosure;
+    const setVisible = isForeground ? setShowForegroundDisclosure : setShowDisclosure;
+
+    return (
+      <Modal
+        transparent
+        visible={isVisible}
+        animationType="fade"
+        onRequestClose={() => {
+          setVisible(false);
+          if (permissionCallback) permissionCallback(false);
+        }}
+      >
+        <View style={styles.disclosureOverlay}>
+          <View style={styles.disclosureContent}>
+            <ScrollView 
+              style={styles.disclosureScrollView}
+              showsVerticalScrollIndicator={false}
+            >
+              <Text style={styles.disclosureTitle}>{content.title}</Text>
+              
+              <Text style={styles.disclosureDescription}>
+                {content.description}
+              </Text>
+
+              <View style={styles.featuresList}>
+                {content.features.map((feature, index) => (
+                  <View key={index} style={styles.featureItem}>
+                    <Text style={styles.featureBullet}>•</Text>
+                    <Text style={styles.featureText}>{feature}</Text>
+                  </View>
+                ))}
+              </View>
+
+              <Text style={styles.dataUsageText}>
+                {content.dataUsage}
+              </Text>
+
+              <Text style={styles.nextStepText}>
+                {content.nextStep}
+              </Text>
+
+              <TouchableOpacity 
+                style={styles.privacyPolicyLink}
+                onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
+              >
+                <Text style={styles.privacyPolicyText}>
+                  View our Privacy Policy
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+
+            <View style={styles.disclosureButtons}>
+              <TouchableOpacity
+                style={[styles.disclosureButton, styles.disclosureCancelButton]}
+                onPress={() => {
+                  setVisible(false);
+                  if (permissionCallback) permissionCallback(false);
+                }}
+              >
+                <Text style={styles.disclosureCancelText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.disclosureButton, styles.disclosureConfirmButton]}
+                onPress={async () => {
+                  setVisible(false);
+                  const result = await handlePermissionFlow(isForeground ? 'foreground' : 'background');
+                  
+                  // If we're continuing to background disclosure, don't call callback yet
+                  if (result !== null && permissionCallback) {
+                    permissionCallback(result);
+                  }
+                }}
+              >
+                <Text style={styles.disclosureConfirmText}>Continue</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
   };
 
   const strokeDashoffset = animatedProgress.interpolate({
@@ -254,6 +402,7 @@ const CheckInProgressButton = ({ email }) => {
     }
     return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
+
 
   return (
     <View style={styles.container}>
@@ -346,79 +495,11 @@ const CheckInProgressButton = ({ email }) => {
         </View>
       </Modal>
 
-      {/* Disclosure Modal */}
-      <Modal
-        transparent
-        visible={showDisclosure}
-        animationType="fade"
-        onRequestClose={() => {
-          setShowDisclosure(false);
-          if (permissionCallback) permissionCallback(false);
-        }}
-      >
-        <View style={styles.disclosureOverlay}>
-          <View style={styles.disclosureContent}>
-            <Text style={styles.disclosureTitle}>Background Location Access Needed</Text>
-            <Text style={styles.disclosureText}>
-              This app requires access to your location even when the app is closed or not in use. 
-              This is necessary to monitor your location during your shift and ensure accurate check-in/check-out functionality.
-            </Text>
-            <Text style={styles.disclosureSubText}>
-              You will be prompted to grant "Allow all the time" permission next.
-            </Text>
+      {/* Disclosure Modals */}
+      
 
-            <View style={styles.disclosureButtons}>
-              <TouchableOpacity
-                style={[styles.disclosureButton, styles.disclosureCancelButton]}
-                onPress={() => {
-                  setShowDisclosure(false);
-                  if (permissionCallback) permissionCallback(false);
-                }}
-              >
-                <Text style={styles.disclosureCancelText}>Cancel</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.disclosureButton, styles.disclosureConfirmButton]}
-                onPress={async () => {
-                  setShowDisclosure(false);
-                  
-                  // Now request background permissions
-                  console.log('Requesting essential background location permission...');
-                  const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
-
-                  if (backgroundStatus === 'granted') {
-                    console.log('Background location permission granted.');
-                    if (permissionCallback) permissionCallback(true);
-                  } else {
-                    console.log('Background location permission denied.');
-                    Alert.alert(
-                      'Essential Permission Required',
-                      'You must enable "Allow all the time" location access for this app to use the check-in feature.',
-                      [
-                        {
-                          text: 'Cancel',
-                          style: 'cancel',
-                        },
-                        {
-                          text: 'Open Settings',
-                          onPress: () => {
-                            console.log('Opening settings to enable background location...');
-                            Linking.openSettings();
-                          }
-                        }
-                      ]
-                    );
-                    if (permissionCallback) permissionCallback(false);
-                  }
-                }}
-              >
-                <Text style={styles.disclosureConfirmText}>Continue</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {renderDisclosureModal(true)}
+      {renderDisclosureModal(false)}
     </View>
   );
 };
@@ -502,7 +583,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
-  // Disclosure Modal Styles
   disclosureOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.7)',
@@ -512,34 +592,78 @@ const styles = StyleSheet.create({
   },
   disclosureContent: {
     width: '100%',
+    maxHeight: '80%',
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 20,
   },
+  disclosureScrollView: {
+    flexGrow: 0,
+  },
   disclosureTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 15,
+    marginBottom: 16,
     textAlign: 'center',
     color: '#0b184d',
   },
-  disclosureText: {
+  disclosureDescription: {
     fontSize: 16,
-    marginBottom: 15,
+    marginBottom: 16,
     textAlign: 'center',
     lineHeight: 22,
+    fontWeight: '600',
   },
-  disclosureSubText: {
+  featuresList: {
+    marginBottom: 16,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  featureBullet: {
+    fontSize: 16,
+    marginRight: 8,
+    color: '#0b184d',
+    fontWeight: 'bold',
+  },
+  featureText: {
     fontSize: 14,
-    marginBottom: 20,
+    lineHeight: 20,
+    flex: 1,
+    color: '#333',
+  },
+  dataUsageText: {
+    fontSize: 14,
+    marginBottom: 12,
     textAlign: 'center',
     fontStyle: 'italic',
     color: '#666',
+    lineHeight: 20,
+  },
+  nextStepText: {
+    fontSize: 14,
+    marginBottom: 16,
+    textAlign: 'center',
+    fontWeight: '500',
+    color: '#0b184d',
+    lineHeight: 20,
+  },
+  privacyPolicyLink: {
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  privacyPolicyText: {
+    color: '#0066cc',
+    fontSize: 14,
+    textDecorationLine: 'underline',
   },
   disclosureButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 10,
+    marginTop: 16,
   },
   disclosureButton: {
     flex: 1,

@@ -36,7 +36,7 @@
         "ascApiKeyPath": "./ioscredentials/AuthKey_Y4MFMAMBMQ.p8", 
         "ascApiKeyId": "Y4MFMAMBMQ",                 
         "ascApiKeyIssuerId": "801a4f24-336b-44ec-a3cf-aa17024706bc", 
-        "ascAppId": "6752039125" 
+        "ascAppId": "6752039125"
       },
       "android": {
         "serviceAccountKeyPath": "./google-play-service.json"

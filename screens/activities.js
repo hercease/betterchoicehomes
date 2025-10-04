@@ -12,41 +12,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Storage from '../components/storage';
 import Toast from 'react-native-toast-message';
-
-// ActivityItem component moved outside and properly memoized
-const ActivityItem = React.memo(({ action, date, onPress }) => {
-  // getIcon function moved inside since we can't use hooks here
-  const getIcon = (action) => {
-    const icons = {
-      'check-in': { name: 'login', color: '#4caf50', title: 'Checked In' },
-      'check-out': { name: 'logout', color: '#f44336', title: 'Checked Out' },
-      'shift-swap': { name: 'swap-horiz', color: '#2196f3', title: 'Shift Swap' },
-      'update-profile': { name: 'person', color: '#cc990eff', title: 'Profile Update' },
-      default: { name: 'info', color: '#9e9e9e', title: 'Info' }
-    };
-    return icons[action] || icons.default;
-  };
-
-  const icon = getIcon(action);
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      style={styles.activityItem}
-    >
-      <MaterialIcons
-        name="event"
-        size={24}
-        color="black"
-
-        style={styles.iconMargin}
-      />
-      <View>
-        <Text style={styles.activityTitle}>{action}</Text>
-        <Text style={styles.activitySubtitle}>{date}</Text>
-      </View>
-    </TouchableOpacity>
-  );
-});
+import ActivityItem from '../components/Activity';
 
 export default function ActivitiesScreen() {
   const navigation = useNavigation();
@@ -56,18 +22,6 @@ export default function ActivitiesScreen() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [email, setEmail] = useState('');
-
-  // Memoized getIcon function now correctly inside the component
-  const getIcon = useMemo(() => (action) => {
-    const icons = {
-      'check-in': { name: 'login', color: '#4caf50', title: 'Checked In' },
-      'check-out': { name: 'logout', color: '#f44336', title: 'Checked Out' },
-      'shift-swap': { name: 'swap-horiz', color: '#2196f3', title: 'Shift Swap' },
-      'update-profile': { name: 'person', color: '#cc990eff', title: 'Profile Update' },
-      default: { name: 'info', color: '#9e9e9e', title: 'Info' }
-    };
-    return icons[action] || icons.default;
-  }, []);
 
   // Rest of the component remains the same...
   const fetchActivities = useCallback(async (currentPage = 1, isRefreshing = false) => {

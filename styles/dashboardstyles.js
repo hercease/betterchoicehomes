@@ -36,11 +36,12 @@ const styles = StyleSheet.create({
   },
   userRole: {
     fontSize: 14,
-    color: '#888',
-    textTransform: 'uppercase'
+    color: '#f58634',
   },
   bellContainer: {
-    padding: 5,
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#f58634',
   },
   dateScroll: {
     marginTop: 10,
@@ -198,7 +199,6 @@ const styles = StyleSheet.create({
     color: '#0b184d',
     padding: 15,
   },
-  
   cardSub: {
     fontSize: 12,
     color: '#999',
@@ -227,7 +227,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4, // optional spacing (if you're using React Native >= 0.71)
   },
-
   activityContainer: {
     width: 'auto', // Shows ~3-4 items (adjust based on your item height)
     marginHorizontal: 0,
@@ -328,11 +327,37 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#666',
     marginTop: 20,
+  },
+  errorText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#d32f2f',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  noActivitiesText: {
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 20,
+    fontStyle: 'italic',
+  },
+  errorSubText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#0b184d',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
   }
-  
-  
-  
-  
 });
 
 export default styles;

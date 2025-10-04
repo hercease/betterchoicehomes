@@ -37,7 +37,7 @@ TaskManager.defineTask(GEOFENCE_TASK, async ({ data: { eventType, region }, erro
         body: params.toString(),
       });
       const data = await res.json();
-      console.log("Clock-out result:", data);
+     // console.log("Clock-out result:", data);
 
       if (data.success) {
 

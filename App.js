@@ -38,60 +38,10 @@ export default function App() {
 
 const scheme = useColorScheme();
 
-  useEffect(() => {
-    const setupPushNotifications = async () => {
-      const email = await Storage.getItem('userToken');
-      if (!email) return; // skip if not logged in
-
-      if (Device.isDevice) {
-        const { status: existingStatus } = await Notifications.getPermissionsAsync();
-        let finalStatus = existingStatus;
-
-        if (existingStatus !== 'granted') {
-          const { status } = await Notifications.requestPermissionsAsync();
-          finalStatus = status;
-        }
-
-        if (finalStatus !== 'granted') {
-          console.log('Failed to get push token!');
-          return;
-        }
-
-        const token = (await Notifications.getExpoPushTokenAsync({ projectId: process.env.EXPO_PUBLIC_EXPO_PROJECT_ID })).data;
-        //console.log('Expo push token:', token);
-
-        // Android channel
-        if (Platform.OS === 'android') {
-          await Notifications.setNotificationChannelAsync('default', {
-            name: 'default',
-            importance: Notifications.AndroidImportance.MAX,
-            vibrationPattern: [0, 250, 250, 250],
-            lightColor: '#0e2bd17c',
-          });
-        }
-
-        // Send to backend
-        const params = new URLSearchParams();
-        params.append('email', email);
-        params.append('token', token);
-        const apiUrl = process.env.EXPO_PUBLIC_API_URL;
-        await fetch(`${apiUrl}/save_notification_token`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: params.toString(),
-        });
-      }
-    };
-
-    setupPushNotifications();
-  }, []);
-
   return (
     <>
      {/* Make sure system status bar is visible */}
-     
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Splash" component={SplashScreenPage} />

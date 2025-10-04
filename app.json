@@ -2,7 +2,7 @@
   "expo": {
     "name": "Bcgh Connect",
     "slug": "bcgh-connect",
-    "version": "1.0.1",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/app-icon.png",
     "scheme": "bcghconnect",
@@ -22,8 +22,8 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.betterchoicegrouphomes.app",
-      "buildNumber": "1.0.1",
+      "bundleIdentifier": "com.bcghi.app",
+      "buildNumber": "1.0.0",
       "infoPlist": {
         "UIBackgroundModes": [
           "location",
@@ -35,7 +35,8 @@
         "UIBackgroundModesDescription": "Background location is required for attendance and geofencing.",
         "NSCalendarsUsageDescription": "This app may use your calendar for scheduling and reminders.",
         "NSRemindersUsageDescription": "This app may send reminders for check-in and schedules.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSFaceIDUsageDescription": "Allow Bcgh Connect to use Face ID for secure authentication."
       }
     },
     "android": {
@@ -43,7 +44,7 @@
         "foregroundImage": "./assets/adaptive-icon-foreground.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.betterchoicegrouphomes.app",
+      "package": "com.bcghi.app",
       "versionCode": 2,
       "permissions": [
         "ACCESS_FINE_LOCATION",
@@ -59,7 +60,9 @@
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_BACKGROUND_LOCATION",
         "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_LOCATION"
+        "android.permission.FOREGROUND_SERVICE_LOCATION",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT"
       ],
       "softwareKeyboardLayoutMode": "pan"
     },
@@ -67,6 +70,13 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      [
+        "expo-local-authentication",
+        {
+          "isUsingFingerprint": true,
+          "isUsingFaceId": true
+        }
+      ],
       [
         "expo-location",
         {
