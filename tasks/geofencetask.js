@@ -39,7 +39,7 @@ TaskManager.defineTask(GEOFENCE_TASK, async ({ data: { eventType, region }, erro
       const data = await res.json();
      // console.log("Clock-out result:", data);
 
-      if (data.success) {
+      if (data.status) {
 
         await Location.stopGeofencingAsync(GEOFENCE_TASK);
         await AsyncStorage.multiRemove(['checkin_end', 'appointmentLat', 'appointmentLng']);
