@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "491778806112",
+    "project_id": "betterchoice-c92e8",
+    "storage_bucket": "betterchoice-c92e8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:491778806112:android:e3b15404b57e0df499ce05",
+        "android_client_info": {
+          "package_name": "com.betterchoicegrouphomes.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCDuruMMw77TFfjGEw3B9EWwGJg8ODCFRI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
