@@ -56,6 +56,8 @@ export default function DashboardScreen({ navigation }) {
       const userEmail = await Storage.getItem('userToken');
       if (userEmail) {
         setEmail(userEmail);
+      }else{
+        navigation.replace('Login');
       }
     } catch (error) {
       console.error('Failed to load email', error);
@@ -183,6 +185,10 @@ export default function DashboardScreen({ navigation }) {
           },
           activities: data.data.activities || []
         });
+
+        if(!data.data.isActive){
+          navigation.navigate('EditProfile');
+        }
       } else {
         throw new Error(data.message || 'Failed to fetch user data');
       }

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Bcgh Connect",
     "slug": "bcgh-connect",
-    "version": "1.0.2",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/app-icon.png",
     "scheme": "bcghconnect",
@@ -51,7 +51,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.betterchoicegrouphomes.app",
-      "versionCode": 3,
+      "versionCode": 5,
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",

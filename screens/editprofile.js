@@ -3,7 +3,6 @@ import { View, Text, TextInput, TouchableOpacity, RefreshControl, Platform, Moda
 import { Ionicons } from '@expo/vector-icons';
 import { useForm, Controller, useController  } from 'react-hook-form';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
 import Storage from '../components/storage';
@@ -28,6 +27,8 @@ const EditProfile = ({ navigation }) => {
     handleSubmit(onSubmit)();
   };
 
+  //console.log(userDocuments);
+
   const onRefresh = React.useCallback(async () => {
     try {
     setRefreshing(true);
@@ -44,7 +45,7 @@ const EditProfile = ({ navigation }) => {
   }
   }, [fetchUserDocuments]);
 
-const onSubmit = async (data) => {
+/*const onSubmit = async (data) => {
   setIsLoading(true);
 
   try {
@@ -110,9 +111,9 @@ const onSubmit = async (data) => {
     });
 
     console.log(formData);
-
+    const apiUrl = process.env.EXPO_PUBLIC_API_URL;
     // 7. API request
-    const response = await fetch(`${API_URL}/updateprofile`, {
+    const response = await fetch(`${apiUrl}/updateprofile`, {
       method: 'POST',
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -143,7 +144,7 @@ const onSubmit = async (data) => {
     await fetchUserDocuments();
 
   } catch (error) {
-    //console.error('Submission error:', error);
+    console.error('Submission error:', error);
     const isSizeError = error.message.includes('exceed');
     Toast.show({
       type: 'error',
@@ -155,6 +156,157 @@ const onSubmit = async (data) => {
   } finally {
     setIsLoading(false);
     setUploadProgress(0);
+  }
+};*/
+
+const onSubmit = async (data) => {
+  setIsLoading(true);
+  setUploadProgress(0);
+
+  try {
+    // 1. Check network connection
+    const netState = await Network.getNetworkStateAsync();
+    if (!netState.isConnected) {
+      throw new Error('No internet connection');
+    }
+
+    // 2. Verify authentication
+    const authToken = await Storage.getItem('userToken');
+    if (!authToken) {
+      navigation.replace('Login');
+      return;
+    }
+
+    // 3. Prepare form data
+    const formData = new FormData();
+    formData.append("email", authToken);
+    formData.append("timezone", timezone);
+
+    // 4. Add regular form fields
+    Object.entries(data).forEach(([key, value]) => {
+      if (typeof value === 'object' && value !== null && !(value instanceof Date)) {
+        return; // Skip file-type objects
+      }
+      formData.append(key, value instanceof Date ? value.toISOString() : value);
+    });
+
+    // 5. Handle document uploads
+    userDocuments.documents.forEach(doc => {
+      const fieldValue = data[doc.tag];
+      if (fieldValue?.isNewUpload) {
+        if (fieldValue.size > 5 * 1024 * 1024) {
+          throw new Error(`${doc.title} exceeds 5MB limit`);
+        }
+        formData.append('documents[]', {
+          uri: fieldValue.uri,
+          name: fieldValue.name,
+          type: fieldValue.type,
+        });
+        formData.append('document_tags[]', doc.tag);
+      }
+    });
+
+    // 6. Handle certificate uploads
+    userDocuments.certifications.forEach(cert => {
+      const fieldValue = data[cert.cert_tag];
+      if (fieldValue?.isNewUpload) {
+        if (fieldValue.size > 5 * 1024 * 1024) {
+          throw new Error(`Certificate ${cert.title} exceeds 5MB limit`);
+        }
+        formData.append('certificates[]', {
+          uri: fieldValue.uri,
+          name: fieldValue.name,
+          type: fieldValue.type,
+        });
+        formData.append('certificate_tags[]', cert.cert_tag);
+      }
+    });
+
+    // 7. Use XMLHttpRequest for upload progress
+    const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+    const response = await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      let uploadCompleted = false;
+      
+      // Track upload progress (only up to 90%)
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && !uploadCompleted) {
+          const progress = Math.round((event.loaded / event.total) * 90); // Cap at 90% for upload
+          setUploadProgress(progress);
+        }
+      };
+
+      xhr.onreadystatechange = () => {
+        if (xhr.readyState === 4) {
+          uploadCompleted = true;
+          
+          // Show processing state (90-100%)
+          setUploadProgress(95);
+          
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const responseData = JSON.parse(xhr.responseText);
+              setUploadProgress(100); // Complete
+              resolve({
+                ok: true,
+                status: xhr.status,
+                ...responseData
+              });
+            } catch (error) {
+              setUploadProgress(100);
+              reject(new Error('Invalid JSON response'));
+            }
+          } else {
+            setUploadProgress(100);
+            reject(new Error(`Request failed with status ${xhr.status}`));
+          }
+        }
+      };
+
+      xhr.onerror = () => {
+        setUploadProgress(100);
+        reject(new Error('Network error'));
+      };
+
+      xhr.ontimeout = () => {
+        setUploadProgress(100);
+        reject(new Error('Request timeout'));
+      };
+
+      xhr.open('POST', `${apiUrl}/updateprofile`);
+      xhr.send(formData);
+    });
+
+    // 8. Check response
+    if (!response.status) {
+      throw new Error(response.message || 'Update failed');
+    }
+
+    // 9. Success - keep progress at 100% briefly for visual feedback
+    Toast.show({
+      type: 'success',
+      text1: 'Success',
+      text2: 'Profile updated successfully',
+      visibilityTime: 4000,
+    });
+
+    // 10. Refresh data
+    await fetchUserDocuments();
+
+  } catch (error) {
+    console.error('Submission error:', error);
+    const isSizeError = error.message.includes('exceed');
+    Toast.show({
+      type: 'error',
+      text1: isSizeError ? 'File Too Large' : 'Error',
+      text2: error.message,
+      position: 'bottom',
+      visibilityTime: 5000,
+    });
+  } finally {
+    setIsLoading(false);
+    // Keep progress at 100% for a moment before hiding
+    setTimeout(() => setUploadProgress(0), 2000);
   }
 };
 
@@ -181,6 +333,7 @@ const onSubmit = async (data) => {
       if (!response.ok) throw new Error('Failed to fetch documents');
      
       const data = await response.json();
+      //console.log(data);
        if(data.status){
 
           //console.log(data.data);
@@ -295,16 +448,12 @@ const onSubmit = async (data) => {
          if (file.size && file.size > 5 * 1024 * 1024) {
           throw new Error("File is too large! Please choose a file smaller than 6MB.");
         }
-        const fileContent = await FileSystem.readAsStringAsync(file.uri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
 
         field.onChange({
           name: file.name,
           type: file.mimeType,
           size: file.size,
           uri: file.uri,
-          base64: fileContent,
           isNewUpload: true // Flag new uploads
         });
       }
@@ -327,7 +476,6 @@ const onSubmit = async (data) => {
         {existingDoc?.isApproved && (
           <View style={styles.approvedBadge}>
             <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
-            <Text style={styles.approvedText}>Approved</Text>
           </View>
         )}
       </View>
@@ -765,23 +913,45 @@ const onSubmit = async (data) => {
 
       </View>
 
-      {uploadProgress > 0 && uploadProgress < 100 && (
-        <View style={styles.progressContainer}>
-          <View style={[styles.progressBar, { width: `${uploadProgress}%` }]} />
-          <Text style={styles.progressText}>{uploadProgress}%</Text>
+      {/* Upload Progress */}
+      {uploadProgress > 0 && (
+        <View style={styles.progressSection}>
+          <Text style={styles.progressLabel}>
+            {uploadProgress < 90 
+              ? `Uploading files... ${uploadProgress}%` 
+              : uploadProgress < 100 
+                ? 'Processing...' 
+                : 'Complete!'}
+          </Text>
+          <View style={styles.progressContainer}>
+            <View style={[styles.progressBar, { width: `${Math.min(uploadProgress, 100)}%` }]} />
+            <Text style={styles.progressText}>
+              {Math.min(uploadProgress, 100)}%
+            </Text>
+          </View>
         </View>
       )}
       
       {/* Save Button */}
       <TouchableOpacity 
-        style={styles.saveButton}
+        style={[
+          styles.saveButton,
+          isLoading && styles.saveButtonDisabled
+        ]}
         onPress={() => setShowConfirm(true)}
         activeOpacity={0.8}
         disabled={isLoading}
       >
-        <Text style={styles.saveButtonText}>
-          {isLoading ? 'Saving...' : 'Save Changes'}
-        </Text>
+        {isLoading ? (
+          <>
+            <ActivityIndicator size="small" color="#fff" style={styles.loadingIndicator} />
+            <Text style={styles.saveButtonText}>
+              {uploadProgress > 0 ? `Uploading ${uploadProgress}%` : 'Saving...'}
+            </Text>
+          </>
+        ) : (
+          <Text style={styles.saveButtonText}>Save Changes</Text>
+        )}
       </TouchableOpacity>
 
        <Modal
@@ -918,6 +1088,13 @@ headerTitle: {
     shadowRadius: 8,
     elevation: 5,
   },
+  saveButtonDisabled: {
+    backgroundColor: '#f58634aa', // semi-transparent when disabled
+    shadowOpacity: 0.1,
+  },
+  loadingIndicator: {
+    marginRight: 10,
+  },
   saveButtonText: {
     color: '#fff',
     fontSize: 16,
@@ -987,15 +1164,15 @@ headerTitle: {
     height: 20,
     backgroundColor: '#f0f0f0',
     borderRadius: 10,
-    marginHorizontal: 20,
-    marginBottom: 10,
     overflow: 'hidden',
     flexDirection: 'row',
     alignItems: 'center',
+    position: 'relative',
   },
   progressBar: {
     height: '100%',
     backgroundColor: '#f58634',
+    borderRadius: 10,
   },
   progressText: {
     position: 'absolute',
@@ -1009,6 +1186,25 @@ headerTitle: {
     width: '100%',
     textAlign: 'center',
   },
+  progressSection: {
+    marginHorizontal: 20,
+    marginBottom: 10,
+  },
+  progressLabel: {
+    fontSize: 14,
+    color: '#f58634',
+    marginBottom: 5,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  progressLabelSuccess: {
+    fontSize: 14,
+    color: '#4CAF50',
+    marginBottom: 5,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+
 
   modalOverlay: {
   flex: 1,

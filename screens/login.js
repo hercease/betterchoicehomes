@@ -164,6 +164,7 @@ export default function LoginScreen({ navigation }) {
       if (result.status === true) {
         // Save token
         await Storage.setItem('userToken', result.token, 1);
+        await Storage.setItem('isActive', result.isActive);
         
         // Update stored email if needed
         if (!storedEmail) {
