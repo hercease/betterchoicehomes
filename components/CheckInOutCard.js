@@ -17,6 +17,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import Toast from 'react-native-toast-message';
 import { GEOFENCE_TASK } from '../tasks/geofencetask';
+import { SCHEDULE_MONITOR_TASK } from '../tasks/schedulemonitortask';
+import * as TaskManager from 'expo-task-manager';
+import * as BackgroundFetch from 'expo-background-fetch';
 
 const RADIUS = 50;
 const STROKE_WIDTH = 6;
@@ -222,6 +225,7 @@ const CheckInProgressButton = ({ email }) => {
         ['appointmentLat', data.latitude.toString()],
         ['appointmentLng', data.longitude.toString()],
         ['checkin_end', data.work_seconds.toString()],
+        ['schedule_id', data.schedule_id.toString()],
       ]);
 
       setCheckedIn(true);
@@ -243,6 +247,18 @@ const CheckInProgressButton = ({ email }) => {
         text1: 'Checked In Successfully',
         text2: `Shift started at ${new Date().toLocaleTimeString()}`,
       });
+
+      const isRegistered = await TaskManager.isTaskRegisteredAsync(SCHEDULE_MONITOR_TASK);
+
+      if (isRegistered) {
+        return; // Avoid duplicate registration
+      }
+
+      await BackgroundFetch.registerTaskAsync(SCHEDULE_MONITOR_TASK, {
+        minimumInterval: 15 * 60, // 15 minutes (OS minimum)
+        stopOnTerminate: false,   // Android
+        startOnBoot: true,        // Android
+      }); 
 
     } catch (error) {
       //console.error('Check-in error:', error);
@@ -278,7 +294,8 @@ const CheckInProgressButton = ({ email }) => {
       }
 
       await Location.stopGeofencingAsync(GEOFENCE_TASK);
-      await AsyncStorage.multiRemove(['checkin_end', 'appointmentLat', 'appointmentLng']);
+      await BackgroundFetch.unregisterTaskAsync(SCHEDULE_MONITOR_TASK);
+      await AsyncStorage.multiRemove(['checkin_end', 'appointmentLat', 'appointmentLng', 'schedule_id']);
 
       setCheckedIn(false);
       setRemainingTime(0);

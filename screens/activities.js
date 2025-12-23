@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -19,12 +19,11 @@ export default function ActivitiesScreen() {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [page, setPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [email, setEmail] = useState('');
 
-  // Rest of the component remains the same...
-  const fetchActivities = useCallback(async (currentPage = 1, isRefreshing = false) => {
+  const fetchActivities = useCallback(async (page = 1, isRefreshing = false) => {
     if (!email) return;
 
     try {
@@ -32,8 +31,8 @@ export default function ActivitiesScreen() {
       
       const params = new URLSearchParams();
       params.append('email', email);
-      params.append('page', currentPage);
-      params.append('per_page', 10);
+      params.append('page', page);
+      params.append('per_page', 5);
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -49,12 +48,18 @@ export default function ActivitiesScreen() {
 
       const data = await res.json();
 
+      console.log('Activities:', data.data.data);
+
       if (data?.status) {
-        setActivities(prev => 
-          currentPage === 1 ? data.data : [...prev, ...data.data]
-        );
+        setActivities(data.data.data || []);
         setTotalPages(data?.data?.pagination?.total_pages || 1);
-        setPage(currentPage);
+        setCurrentPage(page);
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: data?.message || 'Failed to fetch activities'
+        });
       }
     } catch (error) {
       if (error.name !== 'AbortError') {
@@ -86,24 +91,74 @@ export default function ActivitiesScreen() {
     if (email) fetchActivities(1);
   }, [email, fetchActivities]);
 
-  const handleRefresh = useCallback(() => fetchActivities(1, true), [fetchActivities]);
-  const handleLoadMore = useCallback(() => {
-    if (page < totalPages && !loading) fetchActivities(page + 1);
-  }, [page, totalPages, loading, fetchActivities]);
+  const handleRefresh = useCallback(() => {
+    fetchActivities(1, true);
+  }, [fetchActivities]);
 
-  const renderFooter = useMemo(() => {
-    return loading ? (
-      <View style={styles.footer}>
-        <ActivityIndicator size="small" color="#0b184d" />
+  const handleNextPage = () => {
+    if (currentPage < totalPages && !loading) {
+      fetchActivities(currentPage + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1 && !loading) {
+      fetchActivities(currentPage - 1);
+    }
+  };
+
+  const renderPaginationControls = () => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <View style={styles.paginationContainer}>
+        <TouchableOpacity
+          style={[
+            styles.paginationButton,
+            currentPage === 1 && styles.disabledButton
+          ]}
+          onPress={handlePrevPage}
+          disabled={currentPage === 1 || loading}
+        >
+          <Text style={[
+            styles.paginationButtonText,
+            currentPage === 1 && styles.disabledButtonText
+          ]}>
+            Previous
+          </Text>
+        </TouchableOpacity>
+
+        <View style={styles.pageInfo}>
+          <Text style={styles.pageInfoText}>
+            Page {currentPage} of {totalPages}
+          </Text>
+          {loading && <ActivityIndicator size="small" color="#0b184d" style={styles.pageLoader} />}
+        </View>
+
+        <TouchableOpacity
+          style={[
+            styles.paginationButton,
+            currentPage === totalPages && styles.disabledButton
+          ]}
+          onPress={handleNextPage}
+          disabled={currentPage === totalPages || loading}
+        >
+          <Text style={[
+            styles.paginationButtonText,
+            currentPage === totalPages && styles.disabledButtonText
+          ]}>
+            Next
+          </Text>
+        </TouchableOpacity>
       </View>
-    ) : null;
-  }, [loading]);
+    );
+  };
 
-  const renderEmptyComponent = useMemo(() => {
+  const renderEmptyComponent = () => {
     return !loading ? <Text style={styles.emptyText}>No activities found</Text> : null;
-  }, [loading]);
+  };
 
-  const keyExtractor = useCallback((item) => `${item.id}-${item.date}`, []);
+  const keyExtractor = useCallback((item, index) => `${item.id}-${item.date}-${index}`, []);
 
   return (
     <View style={styles.container}>
@@ -118,11 +173,16 @@ export default function ActivitiesScreen() {
         <Text style={styles.headerTitle}>Activities</Text>
       </View>
 
+      {renderPaginationControls()}
+
       <FlatList
-        data={activities.data}
+        data={activities}
         keyExtractor={keyExtractor}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.listContent,
+          activities.length === 0 && styles.emptyListContent
+        ]}
+        
         renderItem={({ item }) => (
           <ActivityItem
             {...item}
@@ -139,13 +199,12 @@ export default function ActivitiesScreen() {
             colors={['#0b184d']}
           />
         }
-        onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.5}
-        ListFooterComponent={renderFooter}
         maxToRenderPerBatch={10}
         updateCellsBatchingPeriod={50}
         windowSize={11}
       />
+
+     
     </View>
   );
 }
@@ -171,34 +230,57 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#0b184d',
   },
-  activityItem: {
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 16,
+    paddingHorizontal: 5,
+  },
+  paginationButton: {
+    backgroundColor: '#0b184d',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  disabledButton: {
+    backgroundColor: '#cccccc',
+  },
+  paginationButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  disabledButtonText: {
+    color: '#666666',
+  },
+  pageInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-    padding: 12,
-    backgroundColor: '#f8f8f8',
-    borderRadius: 12
   },
-  iconMargin: {
-    marginRight: 12
+  pageInfoText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+    marginRight: 8,
   },
-  activityTitle: {
-    fontWeight: '600',
-    fontSize: 16
-  },
-  activitySubtitle: {
-    color: '#555',
-    fontSize: 12
+  pageLoader: {
+    marginLeft: 8,
   },
   listContent: {
-    paddingBottom: 20
+    flexGrow: 1,
+    paddingBottom: 20,
   },
-  footer: {
-    paddingVertical: 20
+  emptyListContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
   },
   emptyText: {
     textAlign: 'center',
     marginTop: 20,
-    color: '#666'
-  }
+    color: '#666',
+    fontSize: 16,
+  },
 });

@@ -421,11 +421,11 @@ export default function SettingsScreen({ navigation }) {
           <Text style={styles.sectionTitle}>About</Text>
           <View style={styles.infoItem}>
             <Text style={styles.infoLabel}>App Version</Text>
-            <Text style={styles.infoValue}>1.0.0</Text>
+            <Text style={styles.infoValue}>1.0.6</Text>
           </View>
           <View style={styles.infoItem}>
             <Text style={styles.infoLabel}>Last Updated</Text>
-            <Text style={styles.infoValue}>January 2024</Text>
+            <Text style={styles.infoValue}>December 2025</Text>
           </View>
         </View>
       </ScrollView>
